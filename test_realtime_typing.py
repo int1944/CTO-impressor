@@ -138,6 +138,26 @@ class RealTimeTyper:
             if city_lower.startswith(word_lower) and word_lower != city_lower:
                 return True
         return False
+
+    def _format_suggestion_with_placeholder(self, suggestion_text: str, placeholder_text: str) -> str:
+        """Prefix suggestion with a slot keyword when the user hasn't typed it yet."""
+        if not placeholder_text:
+            return suggestion_text
+        
+        placeholder_first = placeholder_text.strip().split()[0].lower()
+        prefix_candidates = {'from', 'to', 'on', 'at', 'in', 'with', 'for', 'check-in', 'check-out'}
+        if placeholder_first not in prefix_candidates:
+            return suggestion_text
+        
+        query_lower = self.query.lower().strip()
+        last_word = query_lower.split()[-1] if query_lower else ""
+        # If user already typed a different slot keyword, don't force the placeholder keyword
+        if last_word in prefix_candidates and last_word != placeholder_first:
+            return suggestion_text
+        if last_word == placeholder_first or query_lower.endswith(placeholder_first):
+            return suggestion_text
+        
+        return f"{placeholder_first} {suggestion_text}"
         
         print(f"\n   Cursor: {len(self.query)}")
         
@@ -203,7 +223,8 @@ class RealTimeTyper:
                 elif ord(char) == 9:  # Tab - select first suggestion
                     if self.suggestions:
                         selected = self.suggestions[0]
-                        self.query += " " + selected
+                        insert_text = self._format_suggestion_with_placeholder(selected, self.placeholder)
+                        self.query += " " + insert_text
                         self.update_suggestions()
                         self.display()
                 elif ord(char) == 13 or ord(char) == 10:  # Enter

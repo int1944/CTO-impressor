@@ -207,6 +207,26 @@ class LiveTyper:
             if city_lower.startswith(word_lower) and word_lower != city_lower:
                 return True
         return False
+
+    def _format_suggestion_with_placeholder(self, suggestion_text: str, placeholder_text: str) -> str:
+        """Prefix suggestion with a slot keyword when the user hasn't typed it yet."""
+        if not placeholder_text:
+            return suggestion_text
+        
+        placeholder_first = placeholder_text.strip().split()[0].lower()
+        prefix_candidates = {'from', 'to', 'on', 'at', 'in', 'with', 'for', 'check-in', 'check-out'}
+        if placeholder_first not in prefix_candidates:
+            return suggestion_text
+        
+        query_lower = self.query.lower().strip()
+        last_word = query_lower.split()[-1] if query_lower else ""
+        # If user already typed a different slot keyword, don't force the placeholder keyword
+        if last_word in prefix_candidates and last_word != placeholder_first:
+            return suggestion_text
+        if last_word == placeholder_first or query_lower.endswith(placeholder_first):
+            return suggestion_text
+        
+        return f"{placeholder_first} {suggestion_text}"
     
     def run(self):
         """Run live typing interface."""
@@ -234,13 +254,20 @@ class LiveTyper:
                         suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True)
                         # Find first selectable suggestion (skip placeholder)
                         selectable_suggestion = None
+                        placeholder_text = None
+                        if suggestions and suggestions[0].is_placeholder:
+                            placeholder_text = suggestions[0].text
                         for s in suggestions:
                             if s.selectable and not s.is_placeholder:
                                 selectable_suggestion = s
                                 break
                         
                         if selectable_suggestion:
-                            self.query += " " + selectable_suggestion.text
+                            insert_text = self._format_suggestion_with_placeholder(
+                                selectable_suggestion.text,
+                                placeholder_text
+                            )
+                            self.query += " " + insert_text
                             self.clear_and_display()
                     else:
                         # Partial match - suggest intents
