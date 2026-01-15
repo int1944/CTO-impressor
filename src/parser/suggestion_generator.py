@@ -10,7 +10,7 @@ from pathlib import Path
 class Suggestion:
     """Represents a single suggestion."""
     
-    def __init__(self, text: str, entity_type: str, confidence: float):
+    def __init__(self, text: str, entity_type: str, confidence: float, selectable: bool = True, is_placeholder: bool = False):
         """
         Initialize suggestion.
         
@@ -18,22 +18,45 @@ class Suggestion:
             text: Suggestion text
             entity_type: Type of entity (slot name)
             confidence: Confidence score
+            selectable: Whether this suggestion can be selected/clicked
+            is_placeholder: Whether this is a placeholder (ghost text)
         """
         self.text = text
         self.entity_type = entity_type
         self.confidence = confidence
+        self.selectable = selectable
+        self.is_placeholder = is_placeholder
     
     def to_dict(self) -> Dict:
         """Convert suggestion to dictionary."""
         return {
             'text': self.text,
             'entity_type': self.entity_type,
-            'confidence': self.confidence
+            'confidence': self.confidence,
+            'selectable': self.selectable,
+            'is_placeholder': self.is_placeholder
         }
 
 
 class SuggestionGenerator:
     """Generates suggestions based on rule matches."""
+    
+    # Placeholder text mapping for guidance
+    PLACEHOLDER_MAP = {
+        'from': 'from',
+        'to': 'to where',
+        'date': 'on which date',
+        'time': 'at what time',
+        'class': 'in which class',
+        'airline': 'with which airline',
+        'city': 'in which city',
+        'checkin': 'check-in date',
+        'checkout': 'check-out date',
+        'guests': 'for how many guests',
+        'rooms': 'how many rooms',
+        'quota': 'which quota',
+        'intent': None,  # No placeholder for intent
+    }
     
     def __init__(self, data_dir: Optional[str] = None):
         """
@@ -48,6 +71,19 @@ class SuggestionGenerator:
         self.cities = self._load_cities()
         self.airlines = self._load_airlines()
         self.hotels = self._load_hotels()
+    
+    def _get_placeholder_text(self, slot: str, intent: Optional[str] = None) -> Optional[str]:
+        """
+        Get placeholder text for a given slot.
+        
+        Args:
+            slot: Slot name (e.g., 'from', 'to', 'date')
+            intent: Optional intent for context-specific placeholders
+            
+        Returns:
+            Placeholder text or None if no placeholder
+        """
+        return self.PLACEHOLDER_MAP.get(slot)
     
     def _load_cities(self) -> List[str]:
         """Load city names."""
@@ -86,16 +122,17 @@ class SuggestionGenerator:
             pass
         return ['Taj', 'Oberoi', 'ITC', 'Marriott', 'Hilton']
     
-    def generate(self, rule_match: RuleMatch, max_suggestions: int = 8) -> List[Suggestion]:
+    def generate(self, rule_match: RuleMatch, max_suggestions: int = 8, include_placeholder: bool = True) -> List[Suggestion]:
         """
         Generate suggestions based on rule match.
         
         Args:
             rule_match: Matched rule with intent and entities
             max_suggestions: Maximum number of suggestions to return
+            include_placeholder: Whether to include placeholder as first suggestion
             
         Returns:
-            List of suggestions
+            List of suggestions (placeholder first if enabled, then entities)
         """
         if not rule_match:
             return []
@@ -109,61 +146,81 @@ class SuggestionGenerator:
                     Suggestion(
                         text=s,
                         entity_type='intent',
-                        confidence=rule_match.confidence
+                        confidence=rule_match.confidence,
+                        selectable=True,
+                        is_placeholder=False
                     )
                     for s in suggestions[:max_suggestions]
                 ]
             return []
         
-        suggestions = []
+        result_suggestions = []
         next_slot = rule_match.next_slot
         intent = rule_match.intent
         entities = rule_match.entities
         
-        # Generate suggestions based on next slot
+        # Add placeholder as first suggestion (non-selectable ghost text)
+        if include_placeholder:
+            placeholder_text = self._get_placeholder_text(next_slot, intent)
+            if placeholder_text:
+                result_suggestions.append(
+                    Suggestion(
+                        text=placeholder_text,
+                        entity_type=next_slot,
+                        confidence=rule_match.confidence,
+                        selectable=False,
+                        is_placeholder=True
+                    )
+                )
+        
+        # Generate entity suggestions based on next slot
+        entity_suggestions = []
         if next_slot == 'intent':
-            suggestions = self._get_intent_suggestions()
+            entity_suggestions = self._get_intent_suggestions()
         elif next_slot == 'from':
-            suggestions = self._get_city_suggestions(exclude=None)
+            entity_suggestions = self._get_city_suggestions(exclude=None)
         elif next_slot == 'to':
             # Exclude 'from' city if available
             from_city = None
             if entities.get('cities'):
                 from_city = entities['cities'][0]
-            suggestions = self._get_city_suggestions(exclude=from_city)
+            entity_suggestions = self._get_city_suggestions(exclude=from_city)
         elif next_slot == 'date':
-            suggestions = self._get_date_suggestions()
+            entity_suggestions = self._get_date_suggestions()
         elif next_slot == 'time':
-            suggestions = self._get_time_suggestions()
+            entity_suggestions = self._get_time_suggestions()
         elif next_slot == 'class':
-            suggestions = self._get_class_suggestions(intent)
+            entity_suggestions = self._get_class_suggestions(intent)
         elif next_slot == 'airline':
-            suggestions = self._get_airline_suggestions()
+            entity_suggestions = self._get_airline_suggestions()
         elif next_slot == 'city':
-            suggestions = self._get_city_suggestions()
+            entity_suggestions = self._get_city_suggestions()
         elif next_slot == 'checkin' or next_slot == 'checkout':
-            suggestions = self._get_date_suggestions()
+            entity_suggestions = self._get_date_suggestions()
         elif next_slot == 'guests':
-            suggestions = self._get_guests_suggestions()
+            entity_suggestions = self._get_guests_suggestions()
         elif next_slot == 'rooms':
-            suggestions = self._get_rooms_suggestions()
+            entity_suggestions = self._get_rooms_suggestions()
         elif next_slot == 'quota':
-            suggestions = self._get_quota_suggestions()
-        else:
-            # Generic fallback
-            suggestions = []
+            entity_suggestions = self._get_quota_suggestions()
         
-        # Limit to max_suggestions and add confidence
-        limited_suggestions = suggestions[:max_suggestions]
+        # Add entity suggestions (selectable)
+        # Adjust max_suggestions to account for placeholder
+        entity_max = max_suggestions - (1 if include_placeholder and placeholder_text else 0)
+        limited_entity_suggestions = entity_suggestions[:entity_max]
         
-        return [
-            Suggestion(
-                text=s,
-                entity_type=next_slot,
-                confidence=rule_match.confidence
+        for s in limited_entity_suggestions:
+            result_suggestions.append(
+                Suggestion(
+                    text=s,
+                    entity_type=next_slot,
+                    confidence=rule_match.confidence,
+                    selectable=True,
+                    is_placeholder=False
+                )
             )
-            for s in limited_suggestions
-        ]
+        
+        return result_suggestions
     
     def _get_intent_suggestions(self) -> List[str]:
         """Get intent suggestions."""
