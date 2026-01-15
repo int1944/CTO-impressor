@@ -57,8 +57,8 @@ async def get_suggestions(request: SuggestionRequest):
     rule_match = rule_engine.match(processed_query, request.context or {})
     
     if rule_match:
-        # Generate suggestions from rules (include placeholder)
-        suggestions = suggestion_generator.generate(rule_match, include_placeholder=True)
+        # Generate suggestions from rules (include placeholder and pass query for prefix detection)
+        suggestions = suggestion_generator.generate(rule_match, include_placeholder=True, query=request.query)
         source = "rule_based"
         intent = rule_match.intent
         next_slot = rule_match.next_slot

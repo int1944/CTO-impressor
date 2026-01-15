@@ -19,6 +19,7 @@ except ImportError:
 
 from src.parser.rule_engine import RuleEngine
 from src.parser.suggestion_generator import SuggestionGenerator
+from src.services.city_service import get_city_service
 
 class LiveTyper:
     """Live typing with real-time suggestions."""
@@ -62,7 +63,7 @@ class LiveTyper:
                 print(f"\n⚠ Partial match (intent not specified)")
             print(f"   Next Slot: {match.next_slot}")
             
-            suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True) if match.next_slot else []
+            suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True, query=self.query) if match.next_slot else []
             
             # Extract placeholder text for ghost text display
             if suggestions and suggestions[0].is_placeholder:
@@ -207,6 +208,68 @@ class LiveTyper:
             if city_lower.startswith(word_lower) and word_lower != city_lower:
                 return True
         return False
+    
+    def _is_prefix_word(self, word: str, selected_suggestion: str, query_words: list = None) -> tuple[bool, int]:
+        """
+        Check if a word (or multi-word phrase) is a city prefix that should be removed.
+        
+        Args:
+            word: The word to check (usually last word of query)
+            selected_suggestion: The selected suggestion text
+            query_words: Optional list of all query words for multi-word prefix detection
+            
+        Returns:
+            Tuple of (should_remove: bool, num_words: int) where num_words is 1 or 2
+        """
+        if not word:
+            return (False, 0)
+        
+        word_lower = word.lower()
+        suggestion_lower = selected_suggestion.lower()
+        city_service = get_city_service()
+        
+        # Keywords to never remove (slot keywords)
+        keywords = {'from', 'to', 'on', 'at', 'in', 'with', 'for', 'check-in', 'check-out', 'and', 'or'}
+        if word_lower in keywords:
+            return (False, 0)
+        
+        # If word is a complete city, don't remove it
+        if city_service.is_city_in_list(word):
+            return (False, 0)
+        
+        # If word matches the selected suggestion exactly, it's complete (don't remove)
+        if word_lower == suggestion_lower:
+            return (False, 0)
+        
+        # Try multi-word prefix detection if query_words is provided and last word is short
+        if query_words and len(query_words) >= 2 and len(word_lower) <= 3:
+            previous_word = query_words[-2]
+            previous_word_lower = previous_word.lower()
+            
+            # Validate previous word for multi-word prefix
+            if (previous_word_lower not in keywords and 
+                not city_service.is_city_in_list(previous_word)):
+                # Check if previous word appears at the start of any city name
+                cities_with_previous = city_service.search_cities(prefix=previous_word_lower, limit=1)
+                if cities_with_previous:
+                    # Try multi-word prefix
+                    multi_word_prefix = f"{previous_word_lower} {word_lower}"
+                    matching_cities = city_service.search_cities(prefix=multi_word_prefix, limit=1)
+                    if matching_cities:
+                        # Check if the multi-word prefix matches the selected suggestion
+                        if suggestion_lower.startswith(multi_word_prefix):
+                            # It's a valid multi-word prefix - should remove 2 words
+                            return (True, 2)
+        
+        # Fall back to single-word prefix check
+        if suggestion_lower.startswith(word_lower):
+            # Check if there are cities that start with this prefix
+            matching_cities = city_service.search_cities(prefix=word_lower, limit=1)
+            if matching_cities:
+                # It's a valid prefix - should be removed (1 word)
+                return (True, 1)
+        
+        return (False, 0)
 
     def _format_suggestion_with_placeholder(self, suggestion_text: str, placeholder_text: str) -> str:
         """Prefix suggestion with a slot keyword when the user hasn't typed it yet."""
@@ -223,7 +286,8 @@ class LiveTyper:
         # If user already typed a different slot keyword, don't force the placeholder keyword
         if last_word in prefix_candidates and last_word != placeholder_first:
             return suggestion_text
-        if last_word == placeholder_first or query_lower.endswith(placeholder_first):
+        # Check if query already ends with the placeholder keyword (with or without trailing space)
+        if last_word == placeholder_first or query_lower.rstrip().endswith(placeholder_first):
             return suggestion_text
         
         return f"{placeholder_first} {suggestion_text}"
@@ -251,7 +315,7 @@ class LiveTyper:
                 elif ord(char) == 9:
                     match = self.engine.match(self.query)
                     if match and match.next_slot:
-                        suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True)
+                        suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True, query=self.query)
                         # Find first selectable suggestion (skip placeholder)
                         selectable_suggestion = None
                         placeholder_text = None
@@ -263,11 +327,33 @@ class LiveTyper:
                                 break
                         
                         if selectable_suggestion:
+                            # Strip query to handle trailing spaces properly
+                            self.query = self.query.strip()
+                            
+                            # Check if last word(s) is a prefix that should be removed
+                            query_words = self.query.split()
+                            last_word = query_words[-1] if query_words else ""
+                            
+                            # Check for prefix (single or multi-word)
+                            should_remove, num_words = self._is_prefix_word(
+                                last_word, 
+                                selectable_suggestion.text,
+                                query_words
+                            )
+                            
+                            # Remove prefix if detected (remove last N words)
+                            if should_remove and num_words > 0:
+                                self.query = " ".join(query_words[:-num_words])
+                            
                             insert_text = self._format_suggestion_with_placeholder(
                                 selectable_suggestion.text,
                                 placeholder_text
                             )
-                            self.query += " " + insert_text
+                            # Add space only if query is not empty
+                            if self.query:
+                                self.query += " " + insert_text
+                            else:
+                                self.query = insert_text
                             self.clear_and_display()
                     else:
                         # Partial match - suggest intents

@@ -6,6 +6,7 @@ import os
 from typing import Dict, List, Optional
 from pathlib import Path
 from .pattern_matcher import PatternMatcher
+from src.services.city_service import get_city_service
 
 
 class EntityRules:
@@ -50,12 +51,20 @@ class EntityRules:
         self.data_dir = data_dir or os.path.join(
             Path(__file__).parent.parent.parent.parent, 'src', 'data', 'entities'
         )
-        self.cities = self._load_cities()
+        # Use CityService for cities
+        self.city_service = get_city_service()
+        self.cities = self._load_cities()  # Keep for backward compatibility
         self.airlines = self._load_airlines()
         self.hotels = self._load_hotels()
     
     def _load_cities(self) -> List[str]:
-        """Load city names from JSON file."""
+        """Load city names (for backward compatibility)."""
+        # Use CityService to get all cities
+        cities = self.city_service.get_all_cities()
+        if cities:
+            return cities
+        
+        # Fallback to JSON if CityService has no cities
         try:
             cities_file = os.path.join(self.data_dir, 'cities.json')
             if os.path.exists(cities_file):
@@ -131,16 +140,26 @@ class EntityRules:
         return entities
     
     def _extract_cities(self, query: str) -> List[str]:
-        """Extract city names from query."""
+        """Extract city names from query using CityService."""
         found_cities = []
         query_lower = query.lower()
         
-        for city in self.cities:
+        # Use CityService cities for matching
+        cities = self.city_service.get_all_cities()
+        if not cities:
+            # Fallback to self.cities if CityService is empty
+            cities = self.cities
+        
+        for city in cities:
             city_lower = city.lower()
             # Check for exact word match
             pattern = r'\b' + re.escape(city_lower) + r'\b'
             if self.pattern_matcher.match_pattern(query_lower, pattern):
                 found_cities.append(city)
+                # Use CityService to validate city exists
+                if not self.city_service.is_city_in_list(city):
+                    # If city not in service, still include it (might be from fallback)
+                    pass
         
         return found_cities
     

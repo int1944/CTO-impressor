@@ -28,7 +28,7 @@ def test_query(query: str):
                 if values:
                     print(f"    - {entity_type}: {values}")
         
-        suggestions = generator.generate(match, max_suggestions=10)
+        suggestions = generator.generate(match, max_suggestions=10, query=query)
         if suggestions:
             print(f"\n  Suggestions ({len(suggestions)}):")
             for i, s in enumerate(suggestions, 1):
