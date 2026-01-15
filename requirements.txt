@@ -2,3 +2,4 @@ torch>=2.0.0
 transformers>=4.35.0
 psutil>=5.9.0
 accelerate>=0.24.0
+llama_cpp_python>=0.3.16
