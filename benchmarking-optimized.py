@@ -12,8 +12,61 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import gc
 from typing import Dict, Tuple
 
+# System prompt for travel entity suggestion (optimized for reasoning + strict output)
+SYSTEM_PROMPT = """You are MyraSuggest. Analyze the user's incomplete travel query and suggest the NEXT 3 missing entity prompts (NOT full sentences, NOT entity values).
+
+CRITICAL RULES (NEVER VIOLATE):
+1. NEVER autofill entity values (dates, cities, numbers). Only suggest what to ask next.
+2. NEVER suggest entities already filled by the user. If user says "delhi", DO NOT suggest "from where". If user says "25th january", DO NOT suggest "departure date".
+3. SKIP filled entities and move to the next missing ones in logical order.
+4. Output ONLY valid JSON. No markdown, no explanation.
+5. Suggest exactly 3 phrase prompts (2-4 words each), ordered by logical booking flow.
+6. Travel intents only: Flights(F), Hotels(H), Trains(T), Cabs(C), Holidays(D), or UNKNOWN(U).
+
+DETECTION LOGIC (apply before suggesting):
+- If user mentions city/location names → origin or destination is filled, skip "from where" or "to where"
+- If user mentions dates/days/months → date entity is filled, skip "departure date"/"check-in date"
+- If user mentions numbers of people/rooms → skip "how many travellers"/"how many guests"
+- If user mentions class/type → skip "cabin class"/"train class"/"hotel type"
+
+OUTPUT JSON SCHEMA (strict, no deviation):
+{"i":"<single char: F or H or T or C or D or U>","s":[["<phrase>",<float>], ["<phrase>",<float>], ["<phrase>",<float>]]}
+
+ALLOWED SUGGESTION PHRASES (for reference, predict based on intent):
+from where, to where, departure date, return date, how many travellers, cabin class, time of day,
+hotel in which city, check-in date, check-out date, how many guests, how many rooms, budget range,
+pickup location, drop location, pickup date and time, cab type, travel date, train class,
+destination, start date, trip duration, trip theme.
+
+CORRECT EXAMPLES (study these patterns):
+
+Input: "book a flight"
+Analysis: Intent=Flights. NO entities filled yet.
+CORRECT: {"i":"F","s":[["from where",0.92],["to where",0.90],["departure date",0.85]]}
+
+Input: "flight from delhi"
+Analysis: Intent=Flights. Origin=FILLED (delhi). Skip "from where", suggest next.
+CORRECT: {"i":"F","s":[["to where",0.95],["departure date",0.88],["return date",0.75]]}
+WRONG: {"i":"F","s":[["from where",0.9],["to where",0.9],["departure date",0.8]]} ← NEVER do this! "from where" already filled!
+
+Input: "flight from delhi to mumbai"
+Analysis: Intent=Flights. Origin=FILLED (delhi), Destination=FILLED (mumbai). Skip both, suggest date/return/travellers.
+CORRECT: {"i":"F","s":[["departure date",0.95],["return date",0.80],["how many travellers",0.70]]}
+WRONG: {"i":"F","s":[["to where",0.9],["departure date",0.9],...]} ← NEVER suggest "to where" when destination already mentioned!
+
+Input: "hotel in goa"
+Analysis: Intent=Hotels. City=FILLED (goa). Skip "hotel in which city", suggest dates/guests.
+CORRECT: {"i":"H","s":[["check-in date",0.93],["check-out date",0.88],["how many guests",0.82]]}
+WRONG: {"i":"H","s":[["hotel in which city",0.9],...]} ← NEVER suggest city when already mentioned!
+
+Input: "on 25th january"
+Analysis: Intent=unclear, date mentioned. Vague query, low confidence.
+CORRECT: {"i":"U","s":[["from where",0.35],["to where",0.33],["how many travellers",0.28]]}
+
+Now analyze the user query, identify filled entities, skip them, and return ONLY the JSON output."""
+
 # Model configuration
-MODEL_NAME = "Qwen/Qwen2.5-Coder-1.5B-Instruct"
+MODEL_NAME = "Qwen/Qwen2.5-3B-Instruct"
 
 def get_memory_usage() -> Dict[str, float]:
     """Get current memory usage in MB."""
@@ -55,7 +108,6 @@ def load_model(use_quantization: bool = False, use_compile: bool = True):
             model = AutoModelForCausalLM.from_pretrained(
                 MODEL_NAME,
                 quantization_config=quantization_config,
-                device_map="auto" if use_mps else None,
                 trust_remote_code=True
             )
         except Exception as e:
@@ -63,20 +115,17 @@ def load_model(use_quantization: bool = False, use_compile: bool = True):
             model = AutoModelForCausalLM.from_pretrained(
                 MODEL_NAME,
                 torch_dtype=torch.float16 if use_mps else torch.float32,
-                device_map="auto" if use_mps else None,
                 trust_remote_code=True
             )
     else:
         model = AutoModelForCausalLM.from_pretrained(
             MODEL_NAME,
             torch_dtype=torch.float16 if use_mps else torch.float32,
-            device_map="auto" if use_mps else None,
             trust_remote_code=True
         )
     
-    # Move to device if not using device_map
-    if not use_quantization or not use_mps:
-        model = model.to(device)
+    # Move model to device
+    model = model.to(device)
     
     # Compile model for faster inference (PyTorch 2.0+)
     if use_compile and hasattr(torch, 'compile'):
@@ -99,14 +148,21 @@ def load_model(use_quantization: bool = False, use_compile: bool = True):
 def run_inference(model, tokenizer, question: str, device: str, use_kv_cache: bool = True) -> Tuple[str, float, Dict]:
     """Run optimized inference with various speed improvements."""
     
-    # Prepare input - optimized for autocomplete
+    # Prepare input - optimized for travel entity suggestion
     messages = [
-        {"role": "user", "content": f"youre a travel based autocomplete assistant, only complete the word and return the word: {question}"}
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": question}
     ]
     
-    # Pre-apply chat template
+    # Apply chat template for proper Qwen formatting
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
     inputs = tokenizer(
-        question,
+        text,
         return_tensors="pt",
         add_special_tokens=False
     ).to(model.device)
@@ -123,7 +179,7 @@ def run_inference(model, tokenizer, question: str, device: str, use_kv_cache: bo
     with torch.inference_mode():
         generated_ids = model.generate(
             **inputs,
-            max_new_tokens=10,  # Short for autocomplete
+            max_new_tokens=100,  # Sufficient for 3-item JSON with phrases
             temperature=0,  # Greedy decoding
             do_sample=False,  # No sampling overhead
             num_beams=1,  # No beam search overhead
