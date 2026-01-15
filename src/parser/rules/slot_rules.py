@@ -53,6 +53,16 @@ class SlotRules:
         slot_order = self.SLOT_ORDER[intent]
         filled_slots = self._identify_filled_slots(query, intent, entities)
         
+        # For flights and trains, prioritize "from" and "to" before "date"
+        # But allow flexibility - if user provides date, we can accept it
+        if intent in ['flight', 'train']:
+            # Check if "from" is not filled
+            if 'from' not in filled_slots:
+                return 'from'
+            # Check if "to" is not filled
+            if 'to' not in filled_slots:
+                return 'to'
+        
         # Find first unfilled slot
         for slot in slot_order:
             if slot not in filled_slots:
@@ -78,23 +88,82 @@ class SlotRules:
         # Check for intent (always filled if we got here)
         filled_slots.add('intent')
         
-        # Check for 'from' slot
-        if entities.get('cities') and self._has_slot_keyword(query_lower, 'from'):
-            # Check if we can determine which city is 'from'
-            # Simple heuristic: first city mentioned after 'from' keyword
-            if self._has_slot_keyword(query_lower, 'from'):
-                filled_slots.add('from')
+        # Check for 'from' slot - only mark as filled if there's a city after "from"
+        if self._has_slot_keyword(query_lower, 'from'):
+            from_index = query_lower.find(' from ')
+            if from_index == -1:
+                if query_lower.startswith('from '):
+                    from_index = 0
+                elif ' from' in query_lower:
+                    from_index = query_lower.find(' from')
+            
+            if from_index != -1:
+                # Get text after "from"
+                if ' from ' in query_lower:
+                    after_from = query_lower[from_index + 6:].strip()
+                elif query_lower.startswith('from '):
+                    after_from = query_lower[5:].strip()
+                else:
+                    after_from = query_lower[from_index + 5:].strip()
+                
+                # Only mark "from" as filled if there's a city after it
+                if after_from and entities.get('cities'):
+                    cities_after_from = [c for c in entities['cities'] if c.lower() in after_from]
+                    if cities_after_from:
+                        filled_slots.add('from')
         
-        # Check for 'to' slot
-        if entities.get('cities') and self._has_slot_keyword(query_lower, 'to'):
-            filled_slots.add('to')
+        # Check for 'to' slot - only mark as filled if there's a city after "to"
+        if self._has_slot_keyword(query_lower, 'to'):
+            # Find "to" that comes after "from" (for flight/train queries)
+            from_index = query_lower.find(' from ')
+            if from_index == -1:
+                from_index = query_lower.find('from ')
+            
+            if from_index != -1:
+                # Look for "to" after "from"
+                to_index = query_lower.find(' to ', from_index)
+                if to_index == -1:
+                    # Check if it ends with " to"
+                    if query_lower.endswith(' to'):
+                        # "to" is at end with no city after - don't mark as filled
+                        pass
+                    else:
+                        to_index = query_lower.find(' to', from_index)
+                
+                if to_index != -1 and not query_lower.endswith(' to'):
+                    # Get text after "to"
+                    after_to = query_lower[to_index + 4:].strip() if ' to ' in query_lower[to_index:] else query_lower[to_index + 3:].strip()
+                    # Only mark "to" as filled if there's a city after it
+                    if after_to and entities.get('cities'):
+                        cities_after_to = [c for c in entities['cities'] if c.lower() in after_to]
+                        if cities_after_to:
+                            filled_slots.add('to')
+            else:
+                # No "from" found, check if "to" has a city after it
+                to_index = query_lower.find(' to ')
+                if to_index != -1:
+                    after_to = query_lower[to_index + 4:].strip()
+                    if after_to and entities.get('cities'):
+                        cities_after_to = [c for c in entities['cities'] if c.lower() in after_to]
+                        if cities_after_to:
+                            filled_slots.add('to')
         
         # If we have cities but no clear 'from'/'to', assume first is 'from'
+        # But only if "from" keyword wasn't found or no city after it
         if entities.get('cities') and len(entities['cities']) >= 1:
-            if 'from' not in filled_slots:
+            if 'from' not in filled_slots and not self._has_slot_keyword(query_lower, 'from'):
+                # No "from" keyword, assume first city is "from"
                 filled_slots.add('from')
+            # Only mark "to" as filled if we have 2+ cities AND "to" keyword exists with city after it
             if len(entities['cities']) >= 2:
-                filled_slots.add('to')
+                if self._has_slot_keyword(query_lower, 'to'):
+                    # Check if second city is after "to"
+                    to_index = query_lower.find(' to ')
+                    if to_index != -1:
+                        after_to = query_lower[to_index + 4:].strip()
+                        cities_after_to = [c for c in entities['cities'] if c.lower() in after_to]
+                        if cities_after_to:
+                            filled_slots.add('to')
         
         # Check for date slot
         if entities.get('dates'):

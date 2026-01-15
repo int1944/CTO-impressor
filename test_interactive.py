@@ -32,7 +32,8 @@ def test_query(query: str):
         if suggestions:
             print(f"\n  Suggestions ({len(suggestions)}):")
             for i, s in enumerate(suggestions, 1):
-                print(f"    {i}. '{s.text}' (type: {s.entity_type}, confidence: {s.confidence:.2%})")
+                marker = " [PLACEHOLDER - ghost text]" if s.is_placeholder else " [clickable]"
+                print(f"    {i}. '{s.text}'{marker} (type: {s.entity_type}, confidence: {s.confidence:.2%})")
         else:
             print("\n  (no suggestions)")
     else:
