@@ -1,8 +1,12 @@
 """LLM fallback service for when no rules match."""
 
 from typing import List, Dict
-from ..parser.suggestion_generator import Suggestion
+from ..parser.rule_engine import RuleMatch
+import dotenv
+import os
+import requests
 
+dotenv.load_dotenv()
 
 class LLMFallbackService:
     """Placeholder for LLM integration - called when no rules match."""
@@ -11,46 +15,27 @@ class LLMFallbackService:
         """Initialize LLM fallback service."""
         self.llm_client = None  # Will be initialized later
         self.enabled = False    # Feature flag
+        self.url = os.getenv("LLM_FALLBACK_URL")
     
-    async def get_suggestions(self, query: str, context: Dict = None) -> List[Suggestion]:
+    async def get_next_slot(self, query: str) -> RuleMatch:
         """
         Get suggestions from LLM when no rules match.
         
         Args:
             query: User query text
-            context: Optional context dictionary
-            
+                
         Returns:
-            List of suggestions
+            RuleMatch object
         """
-        if context is None:
-            context = {}
-        
-        if not self.enabled:
-            # Return generic fallback suggestions
-            return [
-                Suggestion(text="flight", entity_type="intent", confidence=0.3),
-                Suggestion(text="hotel", entity_type="intent", confidence=0.3),
-                Suggestion(text="train", entity_type="intent", confidence=0.3),
-            ]
-        
-        # Future: Call actual LLM API
-        # response = await self.llm_client.complete(query, context)
-        # return self._parse_llm_response(response)
-        
-        return []
+
+        response = requests.post(self.url, json={"question": query})
+        result = response.json()
+        return RuleMatch(
+            intent=None,
+            confidence=None,
+            entities=None,
+            next_slot=result["response"],
+            match_text=result["latency_ms"]
+        )
     
-    def _parse_llm_response(self, response: str) -> List[Suggestion]:
-        """
-        Parse LLM response into suggestions.
-        
-        This is a placeholder for future implementation.
-        
-        Args:
-            response: LLM API response
-            
-        Returns:
-            List of suggestions
-        """
-        # TODO: Implement LLM response parsing
-        return []
+    

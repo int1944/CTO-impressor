@@ -56,12 +56,14 @@ class RuleEngine:
             RuleMatch if rules matched, None otherwise
         """
         if not query or not query.strip():
+            print("No query provided")
             return None
         
         # Check cache
         if self.cache:
             cached = self.cache.get(query)
             if cached:
+                print("Cache hit")
                 return cached
         
         # Try intent rules first
@@ -98,6 +100,7 @@ class RuleEngine:
             return partial_match
         
         # No match found
+        print("No match found")
         return None
     
     def _match_partial_intent(self, query: str) -> Optional[RuleMatch]:

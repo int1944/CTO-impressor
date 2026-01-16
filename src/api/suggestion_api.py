@@ -55,24 +55,28 @@ async def get_suggestions(request: SuggestionRequest):
     
     # Try rule-based parsing first
     rule_match = rule_engine.match(processed_query, request.context or {})
-    
+    print(rule_match)
+
     if rule_match:
         # Generate suggestions from rules (include placeholder and pass query for prefix detection)
-        suggestions = suggestion_generator.generate(rule_match, include_placeholder=True, query=request.query)
         source = "rule_based"
         intent = rule_match.intent
         next_slot = rule_match.next_slot
+        latency_ms = (time.time() - start_time) * 1000
+
     else:
         # Fallback to LLM
-        suggestions = await llm_fallback.get_suggestions(processed_query, request.context or {})
+        rule_match = await llm_fallback.get_next_slot(processed_query)
         source = "llm_fallback"
         intent = None
-        next_slot = None
+        next_slot = rule_match.next_slot
+        latency_ms = rule_match.match_text
     
+    suggestions = suggestion_generator.generate(rule_match, include_placeholder=True, query=request.query)
     # Convert suggestions to dict
+
     suggestions_dict = [s.to_dict() for s in suggestions]
     
-    latency_ms = (time.time() - start_time) * 1000
     
     return SuggestionResponse(
         suggestions=suggestions_dict,
