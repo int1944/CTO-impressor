@@ -73,7 +73,7 @@ class RealTimeTyper:
         print("REAL-TIME TYPING WITH SUGGESTIONS")
         print("=" * 70)
         print("\nType your query (suggestions update as you type)")
-        print("Press Tab to select suggestion, Backspace to delete, Ctrl+C to exit")
+        print("Press Tab to select suggestion, 1-8 to select suggestion, Backspace to delete, Ctrl+C to exit")
         print("=" * 70)
         
         print(f"\n📝 Query: {self.query}", end="", flush=True)
@@ -222,6 +222,16 @@ class RealTimeTyper:
             return suggestion_text
         
         return f"{placeholder_first} {suggestion_text}"
+
+    def _format_nights_selection(self, suggestion_text: str) -> str:
+        """Append 'night(s)' when selecting a number for nights."""
+        if not self.placeholder or 'night' not in self.placeholder.lower():
+            return suggestion_text
+        
+        if suggestion_text.isdigit():
+            return f"{suggestion_text} night" if suggestion_text == "1" else f"{suggestion_text} nights"
+        
+        return suggestion_text
         
         print(f"\n   Cursor: {len(self.query)}")
         
@@ -284,6 +294,47 @@ class RealTimeTyper:
                         self.query = self.query[:-1]
                         self.update_suggestions()
                         self.display()
+                elif char.isdigit() and char != '0':  # Number key - select suggestion
+                    if self.suggestions:
+                        index = int(char) - 1
+                        if 0 <= index < len(self.suggestions):
+                            selected = self.suggestions[index]
+                            
+                            # Strip query to handle trailing spaces properly
+                            self.query = self.query.strip()
+                            
+                            # Check if last word(s) is a prefix that should be removed
+                            query_words = self.query.split()
+                            last_word = query_words[-1] if query_words else ""
+                            
+                            # Check for prefix (single or multi-word)
+                            should_remove, num_words = self._is_prefix_word(
+                                last_word,
+                                selected,
+                                query_words
+                            )
+                            
+                            # Remove prefix if detected (remove last N words)
+                            if should_remove and num_words > 0:
+                                self.query = " ".join(query_words[:-num_words])
+                            
+                            insert_text = self._format_suggestion_with_placeholder(selected, self.placeholder)
+                            insert_text = self._format_nights_selection(insert_text)
+                            # Add space only if query is not empty
+                            if self.query:
+                                self.query += " " + insert_text
+                            else:
+                                self.query = insert_text
+                            self.update_suggestions()
+                            self.display()
+                        else:
+                            self.query += char
+                            self.update_suggestions()
+                            self.display()
+                    else:
+                        self.query += char
+                        self.update_suggestions()
+                        self.display()
                 elif ord(char) == 9:  # Tab - select first suggestion
                     if self.suggestions:
                         selected = self.suggestions[0]
@@ -307,6 +358,7 @@ class RealTimeTyper:
                             self.query = " ".join(query_words[:-num_words])
                         
                         insert_text = self._format_suggestion_with_placeholder(selected, self.placeholder)
+                        insert_text = self._format_nights_selection(insert_text)
                         # Add space only if query is not empty
                         if self.query:
                             self.query += " " + insert_text

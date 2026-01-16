@@ -373,7 +373,11 @@ class SuggestionGenerator:
     
     def _get_guests_suggestions(self) -> List[str]:
         """Get guest count suggestions."""
-        return ['1', '2', '3', '4', '5', '6']
+        counts = ['1', '2', '3', '4', '5', '6']
+        formatted = []
+        for c in counts:
+            formatted.append(f"{c} guest" if c == '1' else f"{c} guests")
+        return formatted
     
     def _get_rooms_suggestions(self) -> List[str]:
         """Get room count suggestions."""
@@ -389,7 +393,11 @@ class SuggestionGenerator:
     
     def _get_nights_suggestions(self) -> List[str]:
         """Get nights count suggestions for hotels."""
-        return ['1', '2', '3', '4', '5', '7', '10', '14']
+        counts = ['1', '2', '3', '4', '5', '7', '10', '14']
+        formatted = []
+        for c in counts:
+            formatted.append(f"{c} night" if c == '1' else f"{c} nights")
+        return formatted
     
     def _get_category_suggestions(self) -> List[str]:
         """Get property class/category suggestions for hotels."""

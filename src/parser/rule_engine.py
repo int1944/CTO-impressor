@@ -117,6 +117,8 @@ class RuleEngine:
             'need to book a',
             'looking for a',
             'search for a',
+            'book me a',
+            'book me',
             'want to book',
             'need to book',
             'book a',

@@ -45,6 +45,11 @@ class IntentRules:
             (r'\b(hotel|stay|accommodation|room|booking)\s+(in|at|for|from|near)', 0.90),
             (r'\b(check.?in|check.?out|checkin|checkout)', 0.85),
             (r'\b(lodging|resort|guesthouse)', 0.80),
+            (r'\b(find|search|show)\s+hotels?\b', 0.88),
+            (r'\b(any\s+cheap|budget)\s+hotels?\b', 0.86),
+            (r'\b(book a|book)\s+hotel\b', 0.85),
+            (r'\b(hotel)\s+ticket\b', 0.80),
+            (r'\b(by)\s+hotel\b', 0.78),
         ],
         'train': [
             (r'\b(book|want|need|search for)\s+(a\s+)?(train|railway|rail|ticket)', 0.95),
@@ -59,6 +64,9 @@ class IntentRules:
             (r'\b(ndls|bct|mas|sbc)\b', 0.85),
             (r'\b(delhi)\s+to\s+(mumbai)\b', 0.80),
             (r'\b(bangalore)\s+to\s+(chennai)\b', 0.80),
+            (r'\b(train)\s+ticket\b', 0.88),
+            (r'\b(any\s+cheap|budget)\s+trains?\b', 0.86),
+            (r'\b(tatkal)\s+ticket\b', 0.86),
         ]
     }
     

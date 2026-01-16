@@ -11,14 +11,14 @@ class SlotRules:
     # Slot order for each intent (core required slots only)
     SLOT_ORDER = {
         'flight': ['intent', 'from', 'to', 'date', 'time', 'class', 'airline'],
-        'hotel': ['intent', 'city', 'checkin', 'checkout', 'guests', 'rooms'],
+        'hotel': ['intent', 'city', 'checkin', 'checkout', 'nights', 'guests', 'room_type', 'category', 'rooms'],
         'train': ['intent', 'from', 'to', 'date', 'class', 'quota'],
     }
     
     # Optional slots (suggested conditionally, not in strict order)
     OPTIONAL_SLOTS = {
         'flight': ['return', 'passengers'],
-        'hotel': ['nights', 'category'],
+        'hotel': ['nights', 'category', 'room_type', 'guests'],
         'train': ['passengers', 'time'],
     }
     
@@ -38,8 +38,9 @@ class SlotRules:
         'quota': ['quota', 'tatkal', 'general'],
         'return': ['return', 'returning', 'coming back', 'round trip', 'round-trip'],
         'passengers': ['passengers', 'passenger', 'travelers', 'traveler', 'people', 'adults', 'adult'],
-        'nights': ['nights', 'night', 'days', 'day', 'for'],
+        'nights': ['nights', 'night', 'days', 'day'],
         'category': ['star', 'stars', 'budget', 'luxury', 'deluxe', 'premium', 'category', 'rating'],
+        'room_type': ['single room', 'double room', 'suite', 'deluxe room'],
     }
     
     def __init__(self):
@@ -139,63 +140,13 @@ class SlotRules:
         
         # Check for 'from' slot - only mark as filled if there's a city after "from"
         if self._has_slot_keyword(query_lower, 'from'):
-            from_index = query_lower.find(' from ')
-            if from_index == -1:
-                if query_lower.startswith('from '):
-                    from_index = 0
-                elif ' from' in query_lower:
-                    from_index = query_lower.find(' from')
-            
-            if from_index != -1:
-                # Get text after "from"
-                if ' from ' in query_lower:
-                    after_from = query_lower[from_index + 6:].strip()
-                elif query_lower.startswith('from '):
-                    after_from = query_lower[5:].strip()
-                else:
-                    after_from = query_lower[from_index + 5:].strip()
-                
-                # Only mark "from" as filled if there's a city after it
-                if after_from and entities.get('cities'):
-                    cities_after_from = [c for c in entities['cities'] if c.lower() in after_from]
-                    if cities_after_from:
-                        filled_slots.add('from')
+            if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'from'):
+                filled_slots.add('from')
         
         # Check for 'to' slot - only mark as filled if there's a city after "to"
         if self._has_slot_keyword(query_lower, 'to'):
-            # Find "to" that comes after "from" (for flight/train queries)
-            from_index = query_lower.find(' from ')
-            if from_index == -1:
-                from_index = query_lower.find('from ')
-            
-            if from_index != -1:
-                # Look for "to" after "from"
-                to_index = query_lower.find(' to ', from_index)
-                if to_index == -1:
-                    # Check if it ends with " to"
-                    if query_lower.endswith(' to'):
-                        # "to" is at end with no city after - don't mark as filled
-                        pass
-                    else:
-                        to_index = query_lower.find(' to', from_index)
-                
-                if to_index != -1 and not query_lower.endswith(' to'):
-                    # Get text after "to"
-                    after_to = query_lower[to_index + 4:].strip() if ' to ' in query_lower[to_index:] else query_lower[to_index + 3:].strip()
-                    # Only mark "to" as filled if there's a city after it
-                    if after_to and entities.get('cities'):
-                        cities_after_to = [c for c in entities['cities'] if c.lower() in after_to]
-                        if cities_after_to:
-                            filled_slots.add('to')
-            else:
-                # No "from" found, check if "to" has a city after it
-                to_index = query_lower.find(' to ')
-                if to_index != -1:
-                    after_to = query_lower[to_index + 4:].strip()
-                    if after_to and entities.get('cities'):
-                        cities_after_to = [c for c in entities['cities'] if c.lower() in after_to]
-                        if cities_after_to:
-                            filled_slots.add('to')
+            if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'to'):
+                filled_slots.add('to')
         
         # If we have cities but no clear 'from'/'to', assume first is 'from'
         # But only if "from" keyword wasn't found or no city after it
@@ -203,16 +154,15 @@ class SlotRules:
             if 'from' not in filled_slots and not self._has_slot_keyword(query_lower, 'from'):
                 # No "from" keyword, assume first city is "from"
                 filled_slots.add('from')
-            # Only mark "to" as filled if we have 2+ cities AND "to" keyword exists with city after it
-            if len(entities['cities']) >= 2:
+            # If we have 2+ cities, assume destination is also provided
+            if len(entities['cities']) >= 2 and 'to' not in filled_slots:
                 if self._has_slot_keyword(query_lower, 'to'):
-                    # Check if second city is after "to"
-                    to_index = query_lower.find(' to ')
-                    if to_index != -1:
-                        after_to = query_lower[to_index + 4:].strip()
-                        cities_after_to = [c for c in entities['cities'] if c.lower() in after_to]
-                        if cities_after_to:
-                            filled_slots.add('to')
+                    # Check if any city is after "to"
+                    if self._slot_has_city_after_keyword(query_lower, entities['cities'], 'to'):
+                        filled_slots.add('to')
+                else:
+                    # No explicit "to" keyword, assume second city is destination
+                    filled_slots.add('to')
         
         # Check for date slot
         if entities.get('dates'):
@@ -242,7 +192,7 @@ class SlotRules:
                 filled_slots.add('checkin')
             if self._has_slot_keyword(query_lower, 'checkout') or entities.get('checkout'):
                 filled_slots.add('checkout')
-            if self._has_slot_keyword(query_lower, 'guests'):
+            if entities.get('guests') or self._has_slot_keyword(query_lower, 'guests') or self._has_for_number_guests(query_lower):
                 filled_slots.add('guests')
             if self._has_slot_keyword(query_lower, 'rooms'):
                 filled_slots.add('rooms')
@@ -250,8 +200,11 @@ class SlotRules:
             if entities.get('nights') or self._has_slot_keyword(query_lower, 'nights'):
                 filled_slots.add('nights')
             # Check for category slot
-            if entities.get('category') or self._has_slot_keyword(query_lower, 'category'):
+            if entities.get('hotel_categories') or self._has_slot_keyword(query_lower, 'category'):
                 filled_slots.add('category')
+            # Check for room type slot
+            if entities.get('room_types') or self._has_slot_keyword(query_lower, 'room_type'):
+                filled_slots.add('room_type')
             # City slot for hotels
             if entities.get('cities'):
                 filled_slots.add('city')
@@ -260,6 +213,35 @@ class SlotRules:
                 filled_slots.add('quota')
         
         return filled_slots
+
+    def _has_for_number_guests(self, query_lower: str) -> bool:
+        """Detect 'for <number>' guest patterns without nights."""
+        if re.search(r'\bfor\s+\d+\s+nights?\b', query_lower):
+            return False
+        return re.search(r'\bfor\s+\d+\b', query_lower) is not None
+
+    def _slot_has_city_after_keyword(self, query_lower: str, cities: List[str], keyword: str) -> bool:
+        """Check if any city appears after a slot keyword, regardless of order."""
+        if not cities:
+            return False
+        
+        keyword_pattern = r'\b' + re.escape(keyword) + r'\b'
+        keyword_matches = list(re.finditer(keyword_pattern, query_lower))
+        if not keyword_matches:
+            return False
+        
+        city_patterns = []
+        for city in cities:
+            city_lower = city.lower()
+            city_patterns.append((city_lower, re.compile(r'\b' + re.escape(city_lower) + r'\b')))
+        
+        for match in keyword_matches:
+            after_text = query_lower[match.end():]
+            for city_lower, pattern in city_patterns:
+                if pattern.search(after_text):
+                    return True
+        
+        return False
     
     def _has_slot_keyword(self, query: str, slot: str) -> bool:
         """Check if query contains keywords for a specific slot."""

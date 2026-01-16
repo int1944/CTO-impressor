@@ -52,7 +52,7 @@ class LiveTyper:
         print("LIVE TYPING - Suggestions update as you type!")
         print("=" * 70)
         print("\nType your query (ghost text shows what to type next)")
-        print("Commands: Tab=select 1st suggestion, Backspace=delete, Enter=new query, Ctrl+C=exit")
+        print("Commands: Tab=select 1st suggestion, 1-8=select suggestion, Backspace=delete, Enter=new query, Ctrl+C=exit")
         print("=" * 70)
 
         start_time = time.time()
@@ -67,15 +67,15 @@ class LiveTyper:
         
         
         # Fallback to LLM if rule engine doesn't return anything (and query is not empty)
-        if not match and self.query and len(self.query.strip()) > 0:
-            try:
-                match = asyncio.run(self.llm_fallback.get_next_slot(self.query))
-                print("llm response")
-                print("llm intent : ", match.intent)
-                print("llm next slot : ", match.next_slot)
-            except Exception as e:
-                print(f"LLM fallback error: {e}")
-                match = None
+        # if not match and self.query and len(self.query.strip()) > 0:
+        #     try:
+        #         match = asyncio.run(self.llm_fallback.get_next_slot(self.query))
+        #         print("llm response")
+        #         print("llm intent : ", match.intent)
+        #         print("llm next slot : ", match.next_slot)
+        #     except Exception as e:
+        #         print(f"LLM fallback error: {e}")
+        #         match = None
         
         suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True, query=self.query) if match and match.next_slot else []
         
@@ -297,6 +297,16 @@ class LiveTyper:
             return suggestion_text
         
         return f"{placeholder_first} {suggestion_text}"
+
+    def _format_nights_selection(self, suggestion_text: str, placeholder_text: str) -> str:
+        """Append 'night(s)' when selecting a number for nights."""
+        if not placeholder_text or 'night' not in placeholder_text.lower():
+            return suggestion_text
+        
+        if suggestion_text.isdigit():
+            return f"{suggestion_text} night" if suggestion_text == "1" else f"{suggestion_text} nights"
+        
+        return suggestion_text
     
     def run(self):
         """Run live typing interface."""
@@ -315,6 +325,54 @@ class LiveTyper:
                 elif ord(char) == 127 or ord(char) == 8:
                     if len(self.query) > 0:
                         self.query = self.query[:-1]
+                        self.clear_and_display()
+                
+                # Number keys - select corresponding suggestion (1-8)
+                elif char.isdigit() and char != '0':
+                    match = self.engine.match(self.query)
+                    if match and match.next_slot:
+                        suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True, query=self.query)
+                        placeholder_text = suggestions[0].text if suggestions and suggestions[0].is_placeholder else None
+                        entity_suggestions = [s for s in suggestions if s.selectable and not s.is_placeholder]
+                        
+                        index = int(char) - 1
+                        if 0 <= index < len(entity_suggestions):
+                            selectable_suggestion = entity_suggestions[index]
+                            
+                            # Strip query to handle trailing spaces properly
+                            self.query = self.query.strip()
+                            
+                            # Check if last word(s) is a prefix that should be removed
+                            query_words = self.query.split()
+                            last_word = query_words[-1] if query_words else ""
+                            
+                            # Check for prefix (single or multi-word)
+                            should_remove, num_words = self._is_prefix_word(
+                                last_word, 
+                                selectable_suggestion.text,
+                                query_words
+                            )
+                            
+                            # Remove prefix if detected (remove last N words)
+                            if should_remove and num_words > 0:
+                                self.query = " ".join(query_words[:-num_words])
+                            
+                            insert_text = self._format_suggestion_with_placeholder(
+                                selectable_suggestion.text,
+                                placeholder_text
+                            )
+                            insert_text = self._format_nights_selection(insert_text, placeholder_text)
+                            # Add space only if query is not empty
+                            if self.query:
+                                self.query += " " + insert_text
+                            else:
+                                self.query = insert_text
+                            self.clear_and_display()
+                        else:
+                            self.query += char
+                            self.clear_and_display()
+                    else:
+                        self.query += char
                         self.clear_and_display()
                 
                 # Tab - select first selectable suggestion (skip placeholder)
@@ -355,6 +413,7 @@ class LiveTyper:
                                 selectable_suggestion.text,
                                 placeholder_text
                             )
+                            insert_text = self._format_nights_selection(insert_text, placeholder_text)
                             # Add space only if query is not empty
                             if self.query:
                                 self.query += " " + insert_text

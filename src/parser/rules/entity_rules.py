@@ -27,6 +27,32 @@ class EntityRules:
         (r'\b(kal)\b', 'relative_day'),
     ]
 
+    HOTEL_NIGHTS_PATTERNS = [
+        (r'\b(\d+)\s+nights?\b', 'nights'),
+        (r'\b(for)\s+(\d+)\s+nights?\b', 'nights'),
+    ]
+
+    HOTEL_GUESTS_PATTERNS = [
+        (r'\bwith\s+(\d+)\s+guests?\b', 'guests'),
+        (r'\bwith\s+(\d+)\s+people\b', 'guests'),
+        (r'\b(\d+)\s+guests?\b', 'guests'),
+        (r'\b(\d+)\s+people\b', 'guests'),
+        (r'\bfor\s+(\d+)\b', 'guests_for_number'),
+        (r'\b(with\s+family|with my family|staying with family)\b', 'guests_implicit'),
+    ]
+
+    HOTEL_ROOM_TYPE_PATTERNS = [
+        (r'\b(single room|double room|suite|deluxe room)\b', 'room_type'),
+        (r'\b(room)\s+(type)\b', 'room_type'),
+    ]
+
+    HOTEL_CATEGORY_PATTERNS = [
+        (r'\b(\d)\s*-\s*star\b', 'category'),
+        (r'\b(\d)\s*star\b', 'category'),
+        (r'\b(luxury|budget|affordable)\s+hotels?\b', 'category'),
+        (r'\b(5-star|4-star|3-star|2-star|1-star)\b', 'category'),
+    ]
+
     DATE_RANGE_PATTERNS = [
         (r'\b(between|from)\s+(.+?)\s+(and|to)\s+(.+?)\b', 'date_range'),
         (r'\b(\d{1,2})(st|nd|rd|th)?\s+to\s+(\d{1,2})(st|nd|rd|th)?\b', 'date_range'),
@@ -298,6 +324,10 @@ class EntityRules:
             'train_names': [],
             'stations': [],
             'pnr': [],
+            'nights': [],
+            'guests': [],
+            'room_types': [],
+            'hotel_categories': [],
             'times': [],
             'classes': [],
             'airlines': [],
@@ -366,6 +396,12 @@ class EntityRules:
 
         # Extract PNR/status details
         entities['pnr'] = self._extract_pnr(query)
+
+        # Extract hotel-specific entities
+        entities['nights'] = self._extract_hotel_nights(query)
+        entities['guests'] = self._extract_hotel_guests(query)
+        entities['room_types'] = self._extract_hotel_room_types(query)
+        entities['hotel_categories'] = self._extract_hotel_categories(query)
         
         # Intent-specific extraction
         if intent == 'flight':
@@ -720,6 +756,73 @@ class EntityRules:
                 })
         
         return pnr
+
+    def _extract_hotel_nights(self, query: str) -> List[Dict[str, str]]:
+        """Extract hotel stay nights."""
+        nights = []
+        query_lower = query.lower()
+        
+        for pattern, nights_type in self.HOTEL_NIGHTS_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                nights.append({
+                    'text': match.group(0),
+                    'type': nights_type,
+                    'raw': match.group(0)
+                })
+        
+        return nights
+
+    def _extract_hotel_guests(self, query: str) -> List[Dict[str, str]]:
+        """Extract hotel guest counts."""
+        guests = []
+        query_lower = query.lower()
+        
+        for pattern, guest_type in self.HOTEL_GUESTS_PATTERNS:
+            if guest_type == 'guests_for_number' and 'night' in query_lower:
+                # Avoid treating "for 3 nights" as guests
+                continue
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                guests.append({
+                    'text': match.group(0),
+                    'type': guest_type,
+                    'raw': match.group(0)
+                })
+        
+        return guests
+
+    def _extract_hotel_room_types(self, query: str) -> List[Dict[str, str]]:
+        """Extract hotel room types."""
+        room_types = []
+        query_lower = query.lower()
+        
+        for pattern, room_type in self.HOTEL_ROOM_TYPE_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                room_types.append({
+                    'text': match.group(0),
+                    'type': room_type,
+                    'raw': match.group(0)
+                })
+        
+        return room_types
+
+    def _extract_hotel_categories(self, query: str) -> List[Dict[str, str]]:
+        """Extract hotel category/class."""
+        categories = []
+        query_lower = query.lower()
+        
+        for pattern, category_type in self.HOTEL_CATEGORY_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                categories.append({
+                    'text': match.group(0),
+                    'type': category_type,
+                    'raw': match.group(0)
+                })
+        
+        return categories
     
     def _extract_airlines(self, query: str) -> List[str]:
         """Extract airline names from query."""
