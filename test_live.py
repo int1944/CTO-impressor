@@ -67,7 +67,7 @@ class LiveTyper:
         
         
         # Fallback to LLM if rule engine doesn't return anything (only when user enters space)
-        if not match and self.query and len(self.query.strip()) > 0 or self.query.endswith(' '):
+        if not match and self.query and len(self.query.strip()) > 0 and self.query.endswith(' '):
             try:
                 match = asyncio.run(self.llm_fallback.get_next_slot(self.query))
                 print("llm response")
