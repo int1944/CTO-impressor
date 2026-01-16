@@ -2,6 +2,8 @@
 
 import sys
 import os
+import time
+import asyncio
 
 # Check if we're in a proper terminal
 if not sys.stdin.isatty():
@@ -20,6 +22,7 @@ except ImportError:
 from src.parser.rule_engine import RuleEngine
 from src.parser.suggestion_generator import SuggestionGenerator
 from src.services.city_service import get_city_service
+from src.llm.llm_fallback import LLMFallbackService
 
 class LiveTyper:
     """Live typing with real-time suggestions."""
@@ -28,6 +31,7 @@ class LiveTyper:
         self.engine = RuleEngine(enable_cache=True)
         self.generator = SuggestionGenerator()
         self.query = ""
+        self.llm_fallback = LLMFallbackService()
     
     def get_char(self):
         """Get single character without Enter."""
@@ -50,37 +54,39 @@ class LiveTyper:
         print("\nType your query (ghost text shows what to type next)")
         print("Commands: Tab=select 1st suggestion, Backspace=delete, Enter=new query, Ctrl+C=exit")
         print("=" * 70)
+
+        start_time = time.time()
         
         # Get match and suggestions
         match = self.engine.match(self.query)
         placeholder_text = None
         entity_suggestions = []  # Initialize to avoid undefined variable
-        
         if match:
-            if match.intent:
-                print(f"\n✓ Intent: {match.intent.upper()}")
-            else:
-                print(f"\n⚠ Partial match (intent not specified)")
-            print(f"   Next Slot: {match.next_slot}")
-            
-            suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True, query=self.query) if match.next_slot else []
-            
-            # Extract placeholder text for ghost text display
-            if suggestions and suggestions[0].is_placeholder:
-                placeholder_text = suggestions[0].text
-                entity_suggestions = suggestions[1:]  # Skip placeholder
-            else:
-                entity_suggestions = suggestions
-        else:
-            # Fallback for partial queries
-            match = self.engine._match_partial_intent(self.query)
-            if match and match.next_slot == 'intent':
-                suggestions = [self.generator.Suggestion(text=s, entity_type='intent', confidence=0.5, selectable=True, is_placeholder=False) 
-                             for s in ['flight', 'hotel', 'train']]
-                entity_suggestions = suggestions
-            else:
-                entity_suggestions = []
+            print("match intent : ", match.intent)
+            print("match next slot : ", match.next_slot)
         
+        
+        # Fallback to LLM if rule engine doesn't return anything (and query is not empty)
+        if not match and self.query and len(self.query.strip()) > 0:
+            try:
+                match = asyncio.run(self.llm_fallback.get_next_slot(self.query))
+                print("llm response")
+                print("llm intent : ", match.intent)
+                print("llm next slot : ", match.next_slot)
+            except Exception as e:
+                print(f"LLM fallback error: {e}")
+                match = None
+        
+        suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True, query=self.query) if match and match.next_slot else []
+        
+        if suggestions and suggestions[0].is_placeholder:
+            placeholder_text = suggestions[0].text
+            entity_suggestions = suggestions[1:]  # Skip placeholder
+        else:
+            entity_suggestions = suggestions
+
+        print(f"Latency (test_live): {(time.time() - start_time) * 1000} ms")
+
         # Display query with ghost text
         print(f"\n📝 Query: ", end="", flush=True)
         print(f"{self.query}", end="", flush=True)
