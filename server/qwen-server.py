@@ -449,9 +449,6 @@ RULES:
 - Use natural language placeholders like "to [destination]"
 
 - Be concise and direct
- 
-this
- 
  <|im_end|>
     <|im_start|>user
     {question}
