@@ -197,22 +197,83 @@ class SlotRules:
                         if cities_after_to:
                             filled_slots.add('to')
         
-        # If we have cities but no clear 'from'/'to', assume first is 'from'
-        # But only if "from" keyword wasn't found or no city after it
+        # Handle city-first scenarios: when cities appear before "from"/"to" keywords
         if entities.get('cities') and len(entities['cities']) >= 1:
-            if 'from' not in filled_slots and not self._has_slot_keyword(query_lower, 'from'):
-                # No "from" keyword, assume first city is "from"
-                filled_slots.add('from')
-            # Only mark "to" as filled if we have 2+ cities AND "to" keyword exists with city after it
-            if len(entities['cities']) >= 2:
-                if self._has_slot_keyword(query_lower, 'to'):
-                    # Check if second city is after "to"
-                    to_index = query_lower.find(' to ')
-                    if to_index != -1:
-                        after_to = query_lower[to_index + 4:].strip()
-                        cities_after_to = [c for c in entities['cities'] if c.lower() in after_to]
-                        if cities_after_to:
+            cities = entities['cities']
+            
+            # Find positions of keywords
+            from_keyword_pos = query_lower.find(' from ')
+            if from_keyword_pos == -1:
+                if query_lower.startswith('from '):
+                    from_keyword_pos = 0
+                elif ' from' in query_lower:
+                    from_keyword_pos = query_lower.find(' from')
+            
+            to_keyword_pos = query_lower.find(' to ')
+            if to_keyword_pos == -1:
+                if query_lower.startswith('to '):
+                    to_keyword_pos = 0
+                elif ' to' in query_lower and not query_lower.endswith(' to'):
+                    to_keyword_pos = query_lower.find(' to')
+            
+            # Find positions of cities in query
+            city_positions = []
+            for city in cities:
+                city_lower = city.lower()
+                pos = query_lower.find(city_lower)
+                if pos != -1:
+                    city_positions.append((pos, city, city_lower))
+            city_positions.sort()  # Sort by position in query
+            
+            # Case 1: City appears first, then "to" keyword appears
+            # First city before "to" should be "from"
+            if len(city_positions) >= 1 and to_keyword_pos != -1:
+                first_city_pos, first_city, _ = city_positions[0]
+                # If first city appears before "to" keyword and "from" not already filled
+                if first_city_pos < to_keyword_pos and 'from' not in filled_slots:
+                    # Check if "from" keyword exists - if yes, don't assume
+                    if from_keyword_pos == -1:
+                        # No "from" keyword, first city is "from"
+                        filled_slots.add('from')
+                    elif first_city_pos < from_keyword_pos:
+                        # City appears before "from" keyword - it's still "from"
+                        filled_slots.add('from')
+            
+            # Case 2: "to" keyword exists, check if city appears after it
+            if to_keyword_pos != -1 and len(city_positions) >= 1:
+                # Find city that appears after "to"
+                for pos, city, city_lower in city_positions:
+                    if pos > to_keyword_pos:
+                        # City appears after "to" - mark as "to" slot
+                        after_to = query_lower[to_keyword_pos + 4:].strip() if ' to ' in query_lower[to_keyword_pos:] else query_lower[to_keyword_pos + 3:].strip()
+                        if city_lower in after_to:
                             filled_slots.add('to')
+                            break
+            
+            # Case 3: "from" keyword exists, check if city appears after it
+            if from_keyword_pos != -1 and len(city_positions) >= 1:
+                # Find city that appears after "from" - that's the "from" city
+                for pos, city, city_lower in city_positions:
+                    if pos > from_keyword_pos:
+                        after_from = query_lower[from_keyword_pos + 6:].strip() if ' from ' in query_lower[from_keyword_pos:] else query_lower[from_keyword_pos + 5:].strip()
+                        if city_lower in after_from:
+                            filled_slots.add('from')
+                            break
+                
+                # If a city appears BEFORE "from" keyword, it's likely the destination ("to")
+                # e.g., "Delhi from Mumbai" -> Delhi is "to", Mumbai is "from"
+                for pos, city, city_lower in city_positions:
+                    if pos < from_keyword_pos:
+                        # City before "from" is likely "to" (destination)
+                        filled_slots.add('to')
+                        break
+            
+            # Case 4: No keywords, but cities exist - assume first is "from" (for flights/trains)
+            if intent in ['flight', 'train']:
+                if 'from' not in filled_slots and from_keyword_pos == -1 and to_keyword_pos == -1:
+                    # No keywords at all, first city is likely "from"
+                    if len(city_positions) >= 1:
+                        filled_slots.add('from')
         
         # Check for date slot
         if entities.get('dates'):

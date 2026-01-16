@@ -99,6 +99,11 @@ class RuleEngine:
         if partial_match:
             return partial_match
         
+        # Check for city-first or from-first queries (without intent)
+        city_from_match = self._match_city_or_from_first(query)
+        if city_from_match:
+            return city_from_match
+        
         # No match found
         print("No match found")
         return None
@@ -146,6 +151,156 @@ class RuleEngine:
                     intent=None,
                     confidence=0.4,
                     entities={},
+                    next_slot='intent',
+                    match_text=None
+                )
+        
+        return None
+    
+    def _match_city_or_from_first(self, query: str) -> Optional[RuleMatch]:
+        """
+        Match queries that start with a city or "from" keyword, even without intent.
+        E.g., "Mumbai" -> suggest "to where"
+        E.g., "from Mumbai" -> suggest "to where"
+        E.g., "Mumbai to" -> suggest destination cities
+        """
+        if not query or not query.strip():
+            return None
+        
+        query_lower = query.lower().strip()
+        query_stripped = query.strip()
+        
+        # Extract entities (cities) even without intent
+        entities = self.entity_rules.extract(query, intent=None)
+        cities = entities.get('cities', [])
+        
+        if not cities:
+            return None
+        
+        # Check if query starts with "from" keyword
+        if query_lower.startswith('from '):
+            # Check if "to" keyword appears after "from city"
+            after_from = query_lower[5:].strip()  # After "from "
+            
+            # Find where the city ends
+            first_city_lower = cities[0].lower()
+            city_end_in_after_from = after_from.find(first_city_lower) + len(first_city_lower) if first_city_lower in after_from else 0
+            remaining_after_city = after_from[city_end_in_after_from:].strip() if city_end_in_after_from > 0 else after_from
+            
+            if remaining_after_city.startswith('to ') or remaining_after_city.startswith('to'):
+                # Check if there's a second city after "to"
+                after_to = remaining_after_city[3:].strip() if remaining_after_city.startswith('to ') else remaining_after_city[2:].strip()
+                
+                # Check if any city (other than the first) appears after "to"
+                has_second_city = False
+                for city in cities:
+                    city_lower = city.lower()
+                    if city_lower != first_city_lower and city_lower in after_to:
+                        has_second_city = True
+                        break
+                
+                if has_second_city:
+                    # "from Mumbai to Delhi" -> both cities present, suggest intent
+                    return RuleMatch(
+                        intent=None,
+                        confidence=0.6,
+                        entities=entities,
+                        next_slot='intent',
+                        match_text=None
+                    )
+                else:
+                    # "from Mumbai to" -> suggest destination cities
+                    return RuleMatch(
+                        intent=None,
+                        confidence=0.6,
+                        entities=entities,
+                        next_slot='to',
+                        match_text=None
+                    )
+            else:
+                # "from Mumbai" -> suggest "to" (destination)
+                return RuleMatch(
+                    intent=None,
+                    confidence=0.6,
+                    entities=entities,
+                    next_slot='to',
+                    match_text=None
+                )
+        
+        # Check if query starts with a city name
+        first_city = cities[0]
+        first_city_lower = first_city.lower()
+        
+        # Check if query starts with the first city
+        if query_lower.startswith(first_city_lower):
+            # Check if "to" keyword appears after the city
+            city_end_pos = len(first_city)
+            remaining_query = query_stripped[city_end_pos:].strip()
+            remaining_lower = remaining_query.lower()
+            
+            if remaining_lower.startswith('to ') or remaining_lower.startswith('to'):
+                # Check if there's a second city after "to"
+                after_to = remaining_lower[3:].strip() if remaining_lower.startswith('to ') else remaining_lower[2:].strip()
+                
+                # Check if any city (other than the first) appears after "to"
+                has_second_city = False
+                for city in cities:
+                    city_lower = city.lower()
+                    if city_lower != first_city_lower and city_lower in after_to:
+                        has_second_city = True
+                        break
+                
+                if has_second_city:
+                    # "Mumbai to Delhi" -> both cities present, suggest intent
+                    return RuleMatch(
+                        intent=None,
+                        confidence=0.6,
+                        entities=entities,
+                        next_slot='intent',
+                        match_text=None
+                    )
+                else:
+                    # "Mumbai to" -> suggest destination cities
+                    return RuleMatch(
+                        intent=None,
+                        confidence=0.6,
+                        entities=entities,
+                        next_slot='to',
+                        match_text=None
+                    )
+            else:
+                # "Mumbai" (just city) -> suggest "to" (destination)
+                return RuleMatch(
+                    intent=None,
+                    confidence=0.5,
+                    entities=entities,
+                    next_slot='to',
+                    match_text=None
+                )
+        
+        # Check if query contains "from city" pattern (e.g., "Delhi from Mumbai")
+        if ' from ' in query_lower:
+            from_index = query_lower.find(' from ')
+            before_from = query_lower[:from_index].strip()
+            after_from = query_lower[from_index + 6:].strip()
+            
+            # Check if a city appears before "from" and after "from"
+            city_before_from = False
+            city_after_from = False
+            
+            for city in cities:
+                city_lower = city.lower()
+                if city_lower in before_from:
+                    city_before_from = True
+                if city_lower in after_from:
+                    city_after_from = True
+            
+            if city_before_from and city_after_from:
+                # "Delhi from Mumbai" -> both cities present, suggest intent
+                return RuleMatch(
+                    intent=None,
+                    confidence=0.6,
+                    entities=entities,
                     next_slot='intent',
                     match_text=None
                 )
