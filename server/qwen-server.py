@@ -3,14 +3,178 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import time
 import os
-from typing import Dict, Tuple, Optional
+import re
+from typing import Dict, Tuple, Optional, Set
 from llama_cpp import Llama
 import uvicorn
-
-
+ 
+ 
+def extract_present_entities(query: str) -> Tuple[Set[str], str]:
+    """Extract entities already present in the query and identify LOB."""
+    present = set()
+    query_lower = query.lower()
+    lob = ""
+    
+    # Detect LOB
+    if "flight" in query_lower:
+        lob = "flight"
+        # Check for source city
+        if re.search(r'from\s+(\w+)', query_lower):
+            present.add("source")
+        # Check for destination city
+        if re.search(r'to\s+(\w+)', query_lower):
+            present.add("destination")
+        # Check for date
+        if re.search(r'(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|tomorrow|this\s+\w+)|(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec))', query_lower):
+            present.add("date")
+        # Check for passengers - IMPROVED REGEX
+        if re.search(r'(for\s+\d+\s+(passengers?|people|adults?|travelers?)|with\s+(my|family)|\d+\s+(passengers?|people|adults?|travelers?))', query_lower):
+            present.add("passengers")
+        # Check for class
+        if re.search(r'(economy|business|first\s+class|premium)', query_lower):
+            present.add("class")
+        # Check for time of day
+        if re.search(r'(morning|afternoon|evening|night)', query_lower):
+            present.add("time")
+    
+    elif "hotel" in query_lower:
+        lob = "hotel"
+        # Check for location
+        if re.search(r'in\s+(\w+)', query_lower):
+            present.add("location")
+        # Check for check-in date
+        if re.search(r'(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|tomorrow|this\s+\w+)|check[-\s]?in\s+on|arriving\s+on)', query_lower):
+            present.add("check-in")
+        # Check for nights/duration
+        if re.search(r'for\s+(\d+)\s+(nights?|days?)', query_lower):
+            present.add("nights")
+        # Check for guests
+        if re.search(r'(for|with)\s+(\d+)\s+(guests?|people)', query_lower):
+            present.add("guests")
+        # Check for room type
+        if re.search(r'(single|double|suite|deluxe)\s+(room)?', query_lower):
+            present.add("room")
+        # Check for category
+        if re.search(r'((\d+)[-\s]?star|budget|luxury)', query_lower):
+            present.add("category")
+    
+    elif "train" in query_lower:
+        lob = "train"
+        # Check for source
+        if re.search(r'from\s+(\w+)', query_lower):
+            present.add("source")
+        # Check for destination
+        if re.search(r'to\s+(\w+)', query_lower):
+            present.add("destination")
+        # Check for date
+        if re.search(r'(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|tomorrow|this\s+\w+))', query_lower):
+            present.add("date")
+        # Check for class
+        if re.search(r'(ac|non[-\s]?ac|sleeper|(\d+)ac|first\s+ac)', query_lower):
+            present.add("class")
+        # Check for passengers
+        if re.search(r'(for\s+(\d+)|(\d+)\s+(passengers|people))', query_lower):
+            present.add("passengers")
+        # Check for time
+        if re.search(r'(morning|afternoon|evening|night)', query_lower):
+            present.add("time")
+    
+    elif "holiday" in query_lower or "package" in query_lower:
+        lob = "holiday"
+        # Check for destination
+        if re.search(r'to\s+(\w+)', query_lower):
+            present.add("destination")
+        # Check for start date
+        if re.search(r'(starting\s+on|from\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december))', query_lower):
+            present.add("start-date")
+        # Check for duration
+        if re.search(r'for\s+(\d+)\s+(days?|weeks?)', query_lower):
+            present.add("duration")
+        # Check for travelers
+        if re.search(r'for\s+(\d+)\s+(people|travelers)', query_lower):
+            present.add("travelers")
+        # Check for theme
+        if re.search(r'(honeymoon|adventure|beach|family|mountains?|romantic|cultural)', query_lower):
+            present.add("theme")
+        # Check for budget
+        if re.search(r'(under\s+\d+|budget|luxury)', query_lower):
+            present.add("budget")
+    
+    return present, lob
+ 
+ 
+def filter_suggestions(suggestions: str, present_entities: Set[str], lob: str) -> str:
+    """Filter out suggestions that match present entities."""
+    if not suggestions or not lob:
+        return suggestions
+    
+    # Split suggestions
+    suggestion_list = [s.strip() for s in suggestions.split("|") if s.strip()]
+    filtered = []
+    
+    # Define entity mappings for each LOB
+    entity_mapping = {
+        "flight": {
+            "source": ["from [source]", "from where"],
+            "destination": ["to [destination]", "to where"],
+            "date": ["on [date]", "date"],
+            "passengers": ["for [passengers]", "[passengers]", "passengers", "how many"],
+            "class": ["in [cabin class]", "in [class]", "cabin"],
+            "time": ["in [time]", "time of day"]
+        },
+        "hotel": {
+            "location": ["in [location]", "location", "city"],
+            "check-in": ["on [check-in date]", "check-in"],
+            "nights": ["for [nights]", "[nights]", "nights"],
+            "guests": ["with [guests]", "[guests]", "guests"],
+            "room": ["in [room type]", "room type", "room"],
+            "category": ["[category]", "star", "budget", "luxury"]
+        },
+        "train": {
+            "source": ["from [source]", "from where"],
+            "destination": ["to [destination]", "to where"],
+            "date": ["on [date]", "date"],
+            "class": ["in [class]", "class", "ac", "sleeper"],
+            "passengers": ["for [passengers]", "[passengers]", "passengers"],
+            "time": ["in [time]", "time"]
+        },
+        "holiday": {
+            "destination": ["to [destination]", "destination"],
+            "start-date": ["starting on [date]", "starting"],
+            "duration": ["for [days]", "[days]", "days", "duration"],
+            "travelers": ["for [travelers]", "travelers"],
+            "theme": ["[theme]", "theme", "honeymoon", "adventure"],
+            "budget": ["[budget]", "budget", "under"]
+        }
+    }
+    
+    mapping = entity_mapping.get(lob, {})
+    
+    for suggestion in suggestion_list:
+        suggestion_lower = suggestion.lower()
+        should_include = True
+        
+        # Check if this suggestion matches a present entity
+        for entity_type in present_entities:
+            if entity_type in mapping:
+                patterns = mapping[entity_type]
+                for pattern in patterns:
+                    if pattern.lower() in suggestion_lower:
+                        should_include = False
+                        break
+            if not should_include:
+                break
+        
+        if should_include and suggestion:
+            filtered.append(suggestion)
+    
+    # Return filtered suggestions or empty if none left
+    return "|".join(filtered) if filtered else ""
+ 
+ 
 # FastAPI app
 app = FastAPI(title="Qwen LLM Server", version="1.0.0")
-
+ 
 # CORS middleware to allow cross-origin requests
 app.add_middleware(
     CORSMiddleware,
@@ -19,21 +183,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+ 
 # Global model instance
 llm_instance = None
-
+ 
 MODEL_PATH = os.getenv("MODEL_PATH", "qwen2.5-coder-3b-instruct-fp16.gguf")
-
+ 
 # Request/Response models
 class LLMRequest(BaseModel):
     question: str
-
-
+ 
+ 
 class LLMResponse(BaseModel):
     response: str
     latency_ms: float
-
+ 
 def load_model(use_metal: bool = True, n_ctx: int = 1300):
     """Load the model using llama.cpp."""
     print(f"Loading model: {MODEL_PATH}")
@@ -86,8 +250,8 @@ def load_model(use_metal: bool = True, n_ctx: int = 1300):
     print(f"Model loaded in {load_time:.2f} seconds")
     
     return llm
-
-
+ 
+ 
 def run_inference(llm, question: str, max_tokens: int = 15, use_chat_template: bool = True) -> Tuple[str, float, Dict]:
     """Run optimized inference with llama.cpp."""
     
@@ -201,7 +365,7 @@ Missing: destination, source, date
 Next: destination (first in order)
 
 Output: "to [destination]"
- 
+
 Query: "flight from delhi"
 
 Present: source (delhi)
@@ -225,7 +389,7 @@ Next: date (next in order)
 Output: "on [date]"
 
 NOT: "from [source]" or "to [destination]" (both present)
- 
+
 Query: "hotel in goa"
 
 Present: location (goa)
@@ -308,7 +472,7 @@ this
         stop=["<|im_end|>"],
         echo=False,
     )
-
+ 
     
     inference_time = time.time() - start_time
     
@@ -326,9 +490,159 @@ this
             print("DEBUG - Retrying with simpler prompt format...")
             return run_inference(llm, question, max_tokens, use_chat_template=False)
     
+    # Post-process: Extract present entities and filter suggestions
+    present_entities, lob = extract_present_entities(question)
+    
+    # DEBUG: Print what was detected
+    print(f"DEBUG - Query: '{question}'")
+    print(f"DEBUG - LOB: {lob}")
+    print(f"DEBUG - Present entities: {present_entities}")
+    print(f"DEBUG - Raw model response: '{response}'")
+    
+    # Check for unsupported LOBs (travel/transport keywords not in our domain)
+    unsupported_lobs = ["cab", "taxi", "uber", "ola", "lyft", "bus", "cruise",
+                        "car", "rental", "ferry", "boat", "ship", "metro", "subway",
+                        "tram", "rickshaw", "auto", "bike", "scooter", "cycle"]
+    query_lower = question.lower()
+    
+    # If unsupported LOB is mentioned, return empty response
+    if not lob and any(keyword in query_lower for keyword in unsupported_lobs):
+        response = ""
+        print(f"DEBUG - Unsupported LOB detected, returning empty response")
+        return response, inference_time
+    
+    # If LOB is not detected and no unsupported LOB, suggest our LOB options
+    if not lob:
+        response = "book a [flight/hotel/train/holiday]"
+        print(f"DEBUG - No LOB detected, suggesting LOB clarification: '{response}'")
+        # Ensure single suggestion enforcement still applies
+        if "|" in response:
+            response = response.split("|")[0].strip()
+        return response, inference_time
+    
+    # When LOB is detected, always use strict priority order (ignore model suggestions)
+    if lob:
+        print("DEBUG - Using strict priority order based on LOB and present entities")
+        
+        # Determine next entity based on priority order
+        if lob == "flight":
+            if "source" not in present_entities:
+                response = "from [source]"
+            elif "destination" not in present_entities:
+                response = "to [destination]"
+            elif "date" not in present_entities:
+                response = "on [date]"
+            elif "passengers" not in present_entities:
+                response = "for [passengers]"
+            elif "class" not in present_entities:
+                response = "in [class]"
+            elif "time" not in present_entities:
+                response = "in [time]"
+            else:
+                response = "return [date]"  # Final fallback
+        
+        elif lob == "hotel":
+            if "location" not in present_entities:
+                response = "in [location]"
+            elif "check-in" not in present_entities:
+                response = "on [check-in date]"
+            elif "nights" not in present_entities:
+                response = "for [nights]"
+            elif "guests" not in present_entities:
+                response = "with [guests]"
+            elif "room" not in present_entities:
+                response = "in [room type]"
+            elif "category" not in present_entities:
+                response = "[category]"
+            else:
+                response = "check-out [date]"  # Final fallback
+        
+        elif lob == "train":
+            if "source" not in present_entities:
+                response = "from [source]"
+            elif "destination" not in present_entities:
+                response = "to [destination]"
+            elif "date" not in present_entities:
+                response = "on [date]"
+            elif "class" not in present_entities:
+                response = "in [class]"
+            elif "passengers" not in present_entities:
+                response = "for [passengers]"
+            elif "time" not in present_entities:
+                response = "in [time]"
+            else:
+                response = "berth [preference]"  # Final fallback
+        
+        elif lob == "holiday":
+            if "destination" not in present_entities:
+                response = "to [destination]"
+            elif "start-date" not in present_entities:
+                response = "starting on [date]"
+            elif "duration" not in present_entities:
+                response = "for [days]"
+            elif "travelers" not in present_entities:
+                response = "for [travelers]"
+            elif "theme" not in present_entities:
+                response = "[theme]"
+            elif "budget" not in present_entities:
+                response = "[budget]"
+            else:
+                response = "meal [preference]"  # Final fallback
+        
+        print(f"DEBUG - Priority-based response: '{response}'")
+    
+    # Ensure only single suggestion (take first if multiple)
+    if "|" in response:
+        response = response.split("|")[0].strip()
+        print(f"DEBUG - After single suggestion enforcement: '{response}'")
+    
+    # Map verbose LLM responses to clean UI-friendly labels
+    response_mapping = {
+        # Flights
+        "from [source]": "from",
+        "to [destination]": "to",
+        "on [date]": "date",
+        "return [date]": "return",
+        "for [passengers]": "passengers",
+        "in [class]": "class",
+        "in [cabin class]": "class",
+        "in [time]": "time",
+        
+        # Hotels
+        "in [location]": "city",
+        "on [check-in date]": "checkin",
+        "for [nights]": "nights",
+        "with [guests]": "guests",
+        "in [room type]": "rooms",
+        "[category]": "category",
+        "check-out [date]": "checkout",
+        
+        # Trains (same as flights for most fields)
+        # Already covered in flights section
+        
+        # Holidays
+        "starting on [date]": "date",
+        "for [days]": "nights",
+        "for [travelers]": "passengers",
+        "[theme]": "theme",
+        "[budget]": "budget",
+        
+        # Fallback options
+        "meal [preference]": "meal",
+        "berth [preference]": "berth",
+        
+        # LOB suggestions (keep as-is)
+        "book a [flight/hotel/train/holiday]": "book a [flight/hotel/train/holiday]"
+    }
+    
+    # Apply mapping to response
+    mapped_response = response_mapping.get(response, response)
+    if mapped_response != response:
+        print(f"DEBUG - Mapped '{response}' to '{mapped_response}'")
+        response = mapped_response
     
     return response, inference_time
-
+ 
 def warmup(llm):
     """Warmup run to initialize kernels and cache."""
     print("Warming up model...")
@@ -339,7 +653,7 @@ def warmup(llm):
         print("Warmup complete")
     except Exception as e:
         print(f"Warmup warning: {e}")
-
+ 
 @app.on_event("startup")
 async def startup_event():
     """Load model on server startup."""
@@ -351,7 +665,7 @@ async def startup_event():
     except Exception as e:
         print(f"Failed to load model: {e}")
         raise
-
+ 
 @app.get("/")
 async def root():
     """Health check endpoint."""
@@ -360,7 +674,7 @@ async def root():
         "model_loaded": llm_instance is not None,
         "model_path": MODEL_PATH
     }
-
+ 
 @app.post("/llm", response_model=LLMResponse)
 async def llm_endpoint(request: LLMRequest):
     """
@@ -386,7 +700,7 @@ async def llm_endpoint(request: LLMRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
-
+ 
 @app.get("/health")
 async def health():
     """Health check endpoint."""
@@ -394,6 +708,6 @@ async def health():
         "status": "healthy",
         "model_loaded": llm_instance is not None
     }
-
+ 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
