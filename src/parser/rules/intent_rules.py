@@ -1,7 +1,10 @@
 """Intent detection rules for flight, hotel, and train intents."""
 
 import re
+import os
+import json
 from typing import Optional, Dict
+from pathlib import Path
 from .pattern_matcher import PatternMatcher
 
 
@@ -62,6 +65,38 @@ class IntentRules:
     def __init__(self):
         """Initialize intent rules."""
         self.pattern_matcher = PatternMatcher()
+        self.station_aliases = self._load_station_aliases()
+        self.city_aliases = self._load_city_aliases()
+
+    def _load_station_aliases(self) -> set[str]:
+        """Load station code aliases for intent detection."""
+        data_dir = os.path.join(
+            Path(__file__).parent.parent.parent.parent, 'src', 'data', 'entities'
+        )
+        try:
+            aliases_file = os.path.join(data_dir, 'station_aliases.json')
+            if os.path.exists(aliases_file):
+                with open(aliases_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return set(k.lower() for k in data.get('aliases', {}).keys())
+        except Exception:
+            pass
+        return set()
+
+    def _load_city_aliases(self) -> set[str]:
+        """Load city aliases for intent detection."""
+        data_dir = os.path.join(
+            Path(__file__).parent.parent.parent.parent, 'src', 'data', 'entities'
+        )
+        try:
+            aliases_file = os.path.join(data_dir, 'city_aliases.json')
+            if os.path.exists(aliases_file):
+                with open(aliases_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return set(k.lower() for k in data.get('aliases', {}).keys())
+        except Exception:
+            pass
+        return set()
     
     def match(self, query: str) -> Optional[Dict[str, any]]:
         """
@@ -96,6 +131,26 @@ class IntentRules:
         # Only return if confidence is above threshold
         if best_match and best_confidence >= 0.75:
             return best_match
+
+        # Fallback: detect train intent from station codes
+        if self.station_aliases:
+            query_words = set(re.findall(r'\b[a-z0-9]+\b', query.lower()))
+            if query_words.intersection(self.station_aliases):
+                return {
+                    'intent': 'train',
+                    'confidence': 0.82,
+                    'match_text': None
+                }
+
+        # Fallback: detect flight intent from city aliases (IATA codes)
+        if self.city_aliases:
+            query_words = set(re.findall(r'\b[a-z0-9]+\b', query.lower()))
+            if len(query_words.intersection(self.city_aliases)) >= 2:
+                return {
+                    'intent': 'flight',
+                    'confidence': 0.80,
+                    'match_text': None
+                }
         
         return None
     

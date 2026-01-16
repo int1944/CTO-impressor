@@ -52,6 +52,11 @@ class SlotRules:
         
         slot_order = self.SLOT_ORDER[intent]
         filled_slots = self._identify_filled_slots(query, intent, entities)
+
+        # If user explicitly typed a slot keyword last, honor it (order-free)
+        explicit_slot = self._get_last_keyword_slot(query, intent, filled_slots)
+        if explicit_slot:
+            return explicit_slot
         
         # For flights and trains, prioritize "from" and "to" before "date"
         # But allow flexibility - if user provides date, we can accept it
@@ -69,6 +74,31 @@ class SlotRules:
                 return slot
         
         return None  # All slots filled
+
+    def _get_last_keyword_slot(self, query: str, intent: str, filled_slots: Set[str]) -> Optional[str]:
+        """Return the slot whose keyword appears last in the query."""
+        query_lower = query.lower()
+        last_slot = None
+        last_index = -1
+        
+        # Only consider slots relevant for this intent
+        valid_slots = set(self.SLOT_ORDER.get(intent, []))
+        
+        for slot, keywords in self.SLOT_KEYWORDS.items():
+            if slot not in valid_slots:
+                continue
+            if slot in filled_slots:
+                continue
+            
+            for keyword in keywords:
+                match = re.search(r'\b' + re.escape(keyword) + r'\b', query_lower)
+                if match:
+                    idx = match.start()
+                    if idx >= last_index:
+                        last_index = idx
+                        last_slot = slot
+        
+        return last_slot
     
     def _identify_filled_slots(self, query: str, intent: str, entities: Dict) -> Set[str]:
         """
