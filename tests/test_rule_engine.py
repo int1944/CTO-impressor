@@ -25,6 +25,22 @@ class TestRuleEngine:
         assert match is not None
         assert match.intent == "flight"
         assert match.confidence > 0.75
+
+    def test_flight_round_trip_intent(self):
+        """Test round-trip flight intent detection."""
+        query = "Book a round-trip flight from Delhi to Mumbai"
+        match = self.engine.match(query)
+        
+        assert match is not None
+        assert match.intent == "flight"
+
+    def test_flight_budget_intent(self):
+        """Test budget/cheapest flight intent detection."""
+        query = "What's the cheapest flight from Delhi to Bangalore?"
+        match = self.engine.match(query)
+        
+        assert match is not None
+        assert match.intent == "flight"
     
     def test_hotel_intent_detection(self):
         """Test hotel intent detection."""
@@ -43,6 +59,22 @@ class TestRuleEngine:
         assert match is not None
         assert match.intent == "train"
         assert match.confidence > 0.75
+
+    def test_train_intent_basic_search(self):
+        """Test train intent detection for basic search."""
+        query = "Find trains from Delhi to Mumbai"
+        match = self.engine.match(query)
+        
+        assert match is not None
+        assert match.intent == "train"
+
+    def test_train_intent_station_codes(self):
+        """Test train intent detection for station codes."""
+        query = "NDLS to BCT"
+        match = self.engine.match(query)
+        
+        assert match is not None
+        assert match.intent == "train"
     
     def test_no_intent_match(self):
         """Test query with no matching intent."""
