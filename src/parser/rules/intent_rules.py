@@ -16,6 +16,11 @@ class IntentRules:
         'flight': [
             (r'\b(book|want|need|looking for|search for)\s+(a\s+)?(flight|fly|airplane|airline|ticket)', 0.95),
             (r'\b(flight|fly|flying|airline)\s+(from|to|on|for|between)', 0.90),
+            # Match "flight" when it appears after cities/keywords (e.g., "Mumbai to Delhi flight")
+            (r'\b(from|to|between)\s+[^.]+\s+(flight|fly|flying)\b', 0.88),
+            (r'\b\w+\s+(to|from)\s+\w+\s+(flight|fly|flying)\b', 0.88),
+            # Match standalone "flight" word (lower confidence to avoid false positives)
+            (r'\b(flight|fly|flying)\b', 0.78),
             (r'\b(departure|destination|airport|depart|arrive)', 0.85),
             (r'\b(airline|aircraft|boarding)', 0.80),
             (r'\b(show me|find|list)\s+(the\s+)?flights?\b', 0.90),
@@ -43,6 +48,9 @@ class IntentRules:
         'hotel': [
             (r'\b(book|want|need|looking for|search for)\s+(a\s+)?(hotel|stay|accommodation|room|reservation)', 0.95),
             (r'\b(hotel|stay|accommodation|room|booking)\s+(in|at|for|from|near)', 0.90),
+            # Match "hotel" when it appears after cities/keywords (e.g., "Mumbai hotel")
+            (r'\b\w+\s+(hotel|stay|accommodation|room)\b', 0.88),
+            (r'\b(in|at|for)\s+[^.]+\s+(hotel|stay|accommodation)\b', 0.88),
             (r'\b(check.?in|check.?out|checkin|checkout)', 0.85),
             (r'\b(lodging|resort|guesthouse)', 0.80),
             (r'\b(find|search|show)\s+hotels?\b', 0.88),
@@ -54,6 +62,9 @@ class IntentRules:
         'train': [
             (r'\b(book|want|need|search for)\s+(a\s+)?(train|railway|rail|ticket)', 0.95),
             (r'\b(train|railway|rail)\s+(from|to|on|for|between)', 0.90),
+            # Match "train" when it appears after cities/keywords (e.g., "Mumbai to Delhi train")
+            (r'\b(from|to|between)\s+[^.]+\s+(train|railway|rail)\b', 0.88),
+            (r'\b\w+\s+(to|from)\s+\w+\s+(train|railway|rail)\b', 0.88),
             (r'\b(station|journey|platform|compartment)', 0.85),
             (r'\b(railway|locomotive)', 0.80),
             (r'\b(find|search|show|any)\s+trains?\b', 0.90),
