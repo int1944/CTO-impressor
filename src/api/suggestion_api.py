@@ -55,8 +55,7 @@ async def get_suggestions(request: SuggestionRequest):
     
     # Try rule-based parsing first
     rule_match = rule_engine.match(processed_query, request.context or {})
-    print(rule_match)
-
+    
     if rule_match:
         # Generate suggestions from rules (include placeholder and pass query for prefix detection)
         source = "rule_based"
