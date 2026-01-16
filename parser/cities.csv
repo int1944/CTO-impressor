@@ -1,0 +1,587 @@
+name,population
+Mumbai,12478447
+Delhi,11007835
+Bengaluru,8425970
+Hyderabad,6809970
+Ahmadabad,5570585
+Chennai,4681087
+Kolkata,4486679
+Surat,4462002
+Pune,3115431
+Jaipur,3073350
+Lucknow,2815601
+Kanpur,2767031
+Nagpur,2405421
+Indore,1960631
+Thane,1818872
+Bhopal,1795648
+Visakhapatnam,1730320
+Pimpri Chinchwad,1729359
+Patna,1683200
+Vadodara,1666703
+Ludhiana,1613878
+Agra,1574542
+Nashik,1486973
+Faridabad,1404653
+Meerut,1309023
+Rajkot,1286995
+Vasai Virar City,1221233
+Varanasi,1201815
+Srinagar,1192792
+Aurangabad,1171330
+Dhanbad,1161561
+Amritsar,1132761
+Navi Mumbai,1119477
+Allahabad,1117094
+Ranchi,1073440
+Haora,1072161
+Coimbatore,1061447
+Jabalpur,1054336
+Gwalior,1053505
+Vijayawada,1048240
+Jodhpur,1033918
+Madurai,1016885
+Raipur,1010087
+Kota,1001365
+Guwahati,963429
+Chandigarh,960787
+Solapur,951118
+Hubli-Dharwad,943857
+Bareilly,898167
+Moradabad,889810
+Mysore,887446
+Gurgaon,876824
+Aligarh,872575
+Jalandhar,862196
+Tiruchirappalli,846915
+Bhubaneswar Town,837737
+Salem,831038
+Mira Bhayander,814655
+Thiruvananthapuram,752490
+Bhiwandi,711329
+Saharanpur,703345
+Gorakhpur,671048
+Guntur,651382
+Bikaner,647804
+Amravati,646801
+Noida,642381
+Jamshedpur,629659
+Bhilai Nagar,625697
+Warangal,620116
+Cuttack,606007
+Firozabad,603797
+Kochi,601574
+Bhavnagar,593768
+Dehradun,578420
+Durgapur,566937
+Asansol,564491
+Nanded Waghala,550564
+Kolhapur,549283
+Ajmer,542580
+Gulbarga,532031
+Jamnagar,529308
+Ujjain,515215
+Loni,512296
+Siliguri,509709
+Jhansi,507293
+Ulhasnagar,506937
+Nellore,505258
+Jammu,503690
+Sangli Miraj Kupwad,502697
+Belgaum,488292
+Mangalore,484785
+Ambattur,478134
+Tirunelveli,474838
+Malegaon,471006
+Gaya,463454
+Jalgaon,460468
+Udaipur,451735
+Maheshtala,449423
+Tiruppur,444543
+Tokyo,37115035
+Shanghai,29867918
+Dhaka,23935652
+Sao Paulo,22806704
+Cairo,22623874
+Mexico City,22505315
+Beijing,22189082
+Osaka,18967459
+Chongqing,17773923
+Karachi,17648555
+Istanbul,15029231
+Buenos Aires,15000000
+Kinshasa,14970000
+Lagos,14860000
+Manila,14400000
+Guangzhou,14043500
+Tianjin,13866009
+Rio de Janeiro,13458075
+Lahore,13095000
+Shenzhen,12528300
+Moscow,12450000
+Bogota,11975000
+Paris,11020000
+Jakarta,10770000
+London,10500000
+Bangkok,10400000
+Lima,9751717
+Tehran,9500000
+Chicago,9109000
+Nairobi,8850000
+Wuhan,8500000
+Taipei,8450000
+Hong Kong,8300000
+Ho Chi Minh City,8241000
+Wenzhou,8100000
+Luanda,8070000
+Kuala Lumpur,7900000
+Xian,7800000
+Shenyang,7600000
+Santiago,7500000
+Riyadh,7450000
+Singapore,7400000
+Quezon City,7300000
+Tai An,7200000
+Houston,7000000
+Alexandria,6900000
+Ankara,6850000
+Belo Horizonte,6800000
+Johannesburg,6700000
+Abidjan,6650000
+Melbourne,6600000
+Montreal,6500000
+Monterrey,6400000
+Addis Ababa,6350000
+Chittagong,6300000
+Vancouver,6200000
+Durban,6100000
+Medellin,6000000
+Porto Alegre,5950000
+Bucharest,5900000
+Recife,5850000
+Fortaleza,5750000
+Accra,5700000
+Qingdao,5650000
+Changsha,5600000
+Harbin,5550000
+Kabul,5500000
+Pyongyang,5450000
+Cologne,5400000
+Kathmandu,5350000
+Islamabad,5300000
+Prague,5200000
+Brasilia,5150000
+Portland,5100000
+Seattle,5050000
+Frankfurt,5000000
+Minsk,4950000
+Kano,4900000
+Maputo,4850000
+Tunis,4750000
+Sialkot,4700000
+Abuja,4650000
+Sapporo,4600000
+Zhengzhou,4550000
+Rabat,4500000
+Dublin,4450000
+Manchester,4350000
+Kigali,4250000
+Hamburg,4200000
+Barcelona,4150000
+San Francisco,4100000
+Atlanta,4050000
+Rome,4000000
+Davanagere,435128
+Kozhikode,432097
+Akola,427146
+Kurnool,424920
+Rajpur Sonarpur,423806
+Bokaro Steel City,413934
+South Dum Dum,410524
+Bellary,409644
+Patiala,405164
+Rajarhat Gopalpur,404991
+Agartala,399688
+Bhagalpur,398138
+Muzaffarnagar,392451
+Bhatpara,390467
+Panihati,383522
+Latur,382754
+Dhule,376093
+Rohtak,373133
+Korba,363210
+Bhilwara,360009
+Brahmapur Town,355823
+Muzaffarpur,351838
+Ahmadnagar,350905
+Mathura,349336
+Kollam,349033
+Avadi,344701
+Rajahmundry,343903
+Kadapa,341823
+Kamarhati,336579
+Bilaspur,330106
+Shahjahanpur,327975
+Bijapur,326360
+Rampur,325248
+Shimoga,322428
+Chandrapur,321036
+Junagadh,320250
+Thrissur,315596
+Alwar,315310
+Barddhaman,314638
+Kulti,313977
+Kakinada,312255
+Nizamabad,310467
+Parbhani,307191
+Tumkur,305821
+Hisar,301249
+Ozhukarai,300028
+Biharsharif,296889
+Panipat,294150
+Darbhanga,294116
+Bally,291972
+Aizawl,291822
+Dewas,289438
+Ichalkaranji,287570
+Tirupati,287035
+Karnal,286974
+Bathinda,285813
+Jalna,285349
+Barasat,283443
+Kirari Suleman Nagar,282598
+Purnia,280547
+Satna,280248
+Maunath Bhanjan,279060
+Sonipat,277053
+Farrukhabad-cum-Fatehgarh,275754
+Sagar,273357
+Raurkela Town,273217
+Durg,268679
+Imphal,264986
+Ratlam,264810
+Hapur,262801
+Anantapur,262340
+Arrah,261099
+Karimnagar,260899
+Etawah,256790
+Ambarnath,254003
+North Dum Dum,253625
+Bharatpur,252109
+Begusarai,251136
+New Delhi,249998
+Gandhidham,248705
+Baranagar,248466
+Tiruvottiyur,248059
+Puducherry,241773
+Sikar,237579
+Thoothukkudi,237374
+Rewa,235422
+Mirzapur-cum-Vindhyachal,233691
+Raichur,232456
+Pali,229956
+Ramagundam,229632
+Vizianagaram,227533
+Katihar,225982
+Hardwar,225235
+Ganganagar,224773
+Karawal Nagar,224666
+Nagercoil,224329
+Mango,224002
+Bulandshahr,222826
+Thanjavur,222619
+Uluberia,222175
+Murwara,221875
+Naihati,221762
+Sambhal,221334
+Singrauli,220295
+Bidhan Nagar,218323
+Nadiad,218150
+Yamunanagar,216628
+Pallavaram,216308
+English Bazar,216083
+Eluru,214414
+Secunderabad,213698
+Munger,213101
+Bidar,211944
+Burhanpur,210891
+Raurkela Industrial Township,210412
+Panchkula,210175
+Gandhinagar,208299
+Dindigul,207225
+Kharagpur,206923
+Hospet,206159
+Nangloi Jat,205497
+Deoghar,203116
+Ongole,202826
+Chapra,201597
+Puri,201026
+Haldia,200762
+Nandyal,200746
+Khandwa,200681
+Morena,200506
+Madhyamgram,198964
+Bhiwani,197662
+Anand,197351
+Bhind,197332
+Bhalswa Jahangir Pur,197150
+Amroha,197135
+Ambala,196216
+Baharampur,195363
+Navi Mumbai Panvel Raigarh,194999
+Fatehpur,193801
+Rae Bareli,191056
+Khora,189410
+Morvi,188278
+Bhusawal,187750
+Orai,187185
+Bahraich,186241
+Vellore,185895
+Khammam,184252
+Mahesana,184133
+Raiganj,183682
+Sambalpur,183383
+Serampore,183339
+Sirsa,183282
+Dinapur Nizamat,182241
+Sultan Pur Majra,181624
+Guna,180978
+Panvel,180464
+Shivpuri,179972
+Unnao,178681
+Surendranagar Dudhrej,177827
+Sitapur,177351
+Hugli-Chinsurah,177209
+Hastsal,177033
+Tambaram,176807
+Badlapur,175516
+Alappuzha,174164
+Adityapur,173988
+Cuddalore,173361
+Gadag-Betigeri,172813
+Silchar,172709
+Bahadurgarh,170426
+Machilipatnam,170008
+Shimla,169758
+Deoli,169410
+Medinipur,169127
+Bharuch,168729
+Hoshiarpur,168443
+Jaunpur,168128
+Faizabad,167544
+Chandannagar,166949
+Adoni,166537
+Jind,166225
+Tonk,165363
+Tenali,164649
+Kancheepuram,164265
+Alandur,164162
+Rajnandgaon,163122
+Proddatur,162816
+Uttarpara Kotrung,162386
+Navsari,160100
+Budaun,159221
+Mahbubnagar,157902
+Erode,156953
+Batala,156400
+Haldwani-cum-Kathgodam,156060
+Vidisha,155959
+Saharsa,155175
+Kishangarh,155019
+Thanesar,154962
+Dallo Pura,154955
+Barrackpur,154475
+Banda,154388
+Chittoor,153766
+Veraval,153696
+Krishnanagar,152203
+Porbandar,152136
+Lakhimpur,152010
+Hindupur,151835
+Santipur,151774
+Balurghat,151183
+Hanumangarh,151104
+Bhadravati,150776
+Moga,150432
+Habra,149675
+Pathankot,148357
+Sasaram,147396
+Hajipur,147126
+Bhuj,147123
+Robertson Pet,146428
+Bid,146237
+S.A.S. Nagar,146104
+Beawar,145809
+Burari,145584
+Abohar,145238
+Jamuria,144971
+Tiruvannamalai,144683
+Kaithal,144633
+Godhra,143126
+Shillong,143007
+Hazaribag,142494
+Bhimavaram,142280
+Chas,141618
+Mandsaur,141468
+Rudrapur,140884
+Rewari,140864
+Kumbakonam,140113
+Chitradurga,139914
+Dibrugarh,138661
+Kolar,138553
+Chhindwara,138266
+Bankura,138036
+Mandya,137735
+Hathras,137509
+Raigarh,137097
+Dehri,137068
+Madanapalle,135669
+Malerkotla,135330
+Nalgonda,135163
+North Barrackpur,134825
+Siwan,134458
+Hassan,133723
+Chhattarpur,133626
+Lalitpur,133041
+Bettiah,132896
+Gondiya,132889
+Palakkad,131019
+Pilibhit,130428
+Botad,130302
+Modinagar,130161
+Rajapalayam,130119
+Deoria,129570
+Raniganj,128624
+Khanna,128130
+Neemuch,128108
+Palwal,127931
+Basirhat,127135
+Palanpur,127125
+Mustafabad,127012
+Halisahar,126893
+Hardoi,126890
+Guntakal,126479
+Dhaulpur,126142
+Pithampur,126099
+Srikakulam,126003
+Kurichi,125800
+Nabadwip,125528
+Patan,125502
+Udupi,125350
+Jagdalpur,125345
+Motihari,125183
+Damoh,124979
+Jagadhri,124915
+Rishra,124585
+Ashoknagar Kalyangarh,123906
+Dimapur,123777
+Kanchrapara,122181
+Dharmavaram,121992
+Gokal Pur,121938
+Kashipur,121610
+Puruliya,121436
+Baidyabati,121081
+Sawai Madhopur,120998
+Darjiling,120414
+Mandoli,120345
+Satara,120079
+Churu,119846
+Gangapur City,119045
+Jhunjhunun,118966
+Etah,118632
+Barshi,118573
+Jetpur Navagadh,118550
+Madavaram,118525
+Chikmagalur,118496
+Dabgram,118464
+Titagarh,118426
+Gudivada,118289
+Baleshwar Town,118202
+Roorkee,118188
+Baran,118157
+Hoshangabad,117956
+Dum Dum,117637
+Adilabad,117388
+Mainpuri,117327
+Pudukkottai,117215
+Muktsar,117085
+Hosur,116821
+Yavatmal,116714
+Barnala,116454
+Chittaurgarh,116409
+Nagaon,116355
+Delhi Cantonment,116352
+Narasaraopet,116329
+Bally City,115715
+Valsad,114987
+Basti,114651
+Ambikapur,114575
+Giridih,114447
+Gonda,114353
+Chandausi,114254
+Ambur,113856
+Bagaha,113012
+Achalpur,112293
+Kalol,112126
+Osmanabad,112085
+Bagalkot,112068
+Gondal,112064
+Akbarpur,111594
+Deesa,111149
+Khardaha,111130
+Khurja,111089
+Nandurbar,111067
+Champdani,110983
+Azamgarh,110980
+Ghazipur,110698
+Bongaon,110668
+Mughalsarai,110110
+Firozpur,110091
+Baripada Town,110058
+Sehore,108818
+Anantnag,108505
+Tadpatri,108249
+Kanpur City,108035
+Sultanpur,107914
+Greater Noida,107676
+Bhadrak,107369
+Jalpaiguri,107351
+Shikohabad,107300
+Shamli,107233
+Kishanganj,107076
+Karaikkudi,106793
+Khargone,106452
+Ranibennur,106365
+Amreli,105980
+Hindaun,105690
+Neyveli,105687
+Wardha,105543
+Gangawati,105354
+Suryapet,105250
+Jamalpur,105221
+Bhiwadi,104883
+Ballia,104271
+Ambala Sadar,104268
+Udgir,104063
+Miryalaguda,103855
+Bansberia,103799
+Tadepalligudem,103577
+Betul,103341
+Nagapattinam,102838
+Bundi,102823
+Baraut,102733
+Buxar,102591
+Jehanabad,102456
+Seoni,102377
+Chilakaluripet,101550
+Sujangarh,101528
+Aurangabad,101520
+Bhadreswar,101334
+Kasganj,101241
+Kalyani,100620
+Nagaur,100618
+Port Blair,100608
+Datia,100466
+Hinganghat,100416
+Banswara,100128
+Nagda,100036

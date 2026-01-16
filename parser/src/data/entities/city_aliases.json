@@ -1,0 +1,30 @@
+{
+  "aliases": {
+    "nyc": "New York",
+    "ny": "New York",
+    "la": "Los Angeles",
+    "sf": "San Francisco",
+    "bom": "Mumbai",
+    "del": "Delhi",
+    "blr": "Bangalore",
+    "maa": "Chennai",
+    "ccu": "Kolkata",
+    "hyd": "Hyderabad",
+    "pnq": "Pune",
+    "goi": "Goa",
+    "lhr": "London",
+    "cdg": "Paris",
+    "fco": "Rome",
+    "txl": "Berlin",
+    "mad": "Madrid",
+    "lis": "Lisbon",
+    "dxb": "Dubai",
+    "doh": "Doha",
+    "yyz": "Toronto",
+    "yvr": "Vancouver",
+    "sfo": "San Francisco",
+    "sea": "Seattle",
+    "bos": "Boston",
+    "chi": "Chicago"
+  }
+}
