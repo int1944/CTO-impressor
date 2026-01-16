@@ -159,6 +159,29 @@ class EntityRules:
         (r'\b(any class|any class is fine)\b', 'any'),
     ]
     
+    # Return date patterns (for flights)
+    RETURN_DATE_PATTERNS = [
+        (r'\b(return|returning|coming back|round trip)\s+(on|by|before|after)?\s*(.+?)\b', 'return_date'),
+        (r'\b(return|returning)\s+(tomorrow|today|next week|next month)\b', 'return_date'),
+        (r'\b(return|returning)\s+on\s+(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b', 'return_date'),
+        (r'\b(return|returning)\s+on\s+(\d{1,2})(st|nd|rd|th)\b', 'return_date'),
+    ]
+    
+    # Nights patterns (for hotels)
+    NIGHTS_PATTERNS = [
+        (r'\b(for\s+)?(\d+)\s+(nights?|days?)\b', 'nights'),
+        (r'\b(one|two|three|four|five|six|seven|eight|nine|ten)\s+(nights?|days?)\b', 'nights'),
+        (r'\b(\d+)\s+night\s+stay\b', 'nights'),
+    ]
+    
+    # Category/Property class patterns (for hotels)
+    CATEGORY_PATTERNS = [
+        (r'\b(\d)\s*star\s*(hotel|property)?\b', 'star_rating'),
+        (r'\b(5[-\s]?star|4[-\s]?star|3[-\s]?star|2[-\s]?star|1[-\s]?star)\b', 'star_rating'),
+        (r'\b(budget|economy|mid-range|luxury|deluxe|premium)\s*(hotel)?\b', 'category'),
+        (r'\b(boutique|resort|apartment|villa)\b', 'category'),
+    ]
+    
     def __init__(self, data_dir: Optional[str] = None):
         """
         Initialize entity rules.
@@ -723,3 +746,51 @@ class EntityRules:
                 found_hotels.append(hotel)
         
         return found_hotels
+    
+    def _extract_return_dates(self, query: str) -> List[Dict[str, str]]:
+        """Extract return dates separately from departure dates."""
+        return_dates = []
+        query_lower = query.lower()
+        
+        for pattern, date_type in self.RETURN_DATE_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                return_dates.append({
+                    'text': match.group(0),
+                    'type': date_type,
+                    'raw': match.group(0)
+                })
+        
+        return return_dates
+    
+    def _extract_nights(self, query: str) -> List[Dict[str, str]]:
+        """Extract number of nights for hotel stays."""
+        nights = []
+        query_lower = query.lower()
+        
+        for pattern, night_type in self.NIGHTS_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                nights.append({
+                    'text': match.group(0),
+                    'type': night_type,
+                    'raw': match.group(0)
+                })
+        
+        return nights
+    
+    def _extract_category(self, query: str) -> List[Dict[str, str]]:
+        """Extract property class/category for hotels."""
+        categories = []
+        query_lower = query.lower()
+        
+        for pattern, cat_type in self.CATEGORY_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                categories.append({
+                    'text': match.group(0),
+                    'type': cat_type,
+                    'raw': match.group(0)
+                })
+        
+        return categories

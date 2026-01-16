@@ -8,11 +8,18 @@ from .pattern_matcher import PatternMatcher
 class SlotRules:
     """Rules for inferring the next slot to fill based on current query state."""
     
-    # Slot order for each intent
+    # Slot order for each intent (core required slots only)
     SLOT_ORDER = {
         'flight': ['intent', 'from', 'to', 'date', 'time', 'class', 'airline'],
         'hotel': ['intent', 'city', 'checkin', 'checkout', 'guests', 'rooms'],
         'train': ['intent', 'from', 'to', 'date', 'class', 'quota'],
+    }
+    
+    # Optional slots (suggested conditionally, not in strict order)
+    OPTIONAL_SLOTS = {
+        'flight': ['return', 'passengers'],
+        'hotel': ['nights', 'category'],
+        'train': ['passengers', 'time'],
     }
     
     # Keywords that indicate a slot is being filled
@@ -29,6 +36,10 @@ class SlotRules:
         'guests': ['guests', 'guest', 'people', 'persons'],
         'rooms': ['room', 'rooms'],
         'quota': ['quota', 'tatkal', 'general'],
+        'return': ['return', 'returning', 'coming back', 'round trip', 'round-trip'],
+        'passengers': ['passengers', 'passenger', 'travelers', 'traveler', 'people', 'adults', 'adult'],
+        'nights': ['nights', 'night', 'days', 'day', 'for'],
+        'category': ['star', 'stars', 'budget', 'luxury', 'deluxe', 'premium', 'category', 'rating'],
     }
     
     def __init__(self):
@@ -68,10 +79,18 @@ class SlotRules:
             if 'to' not in filled_slots:
                 return 'to'
         
-        # Find first unfilled slot
+        # Find first unfilled core slot
         for slot in slot_order:
             if slot not in filled_slots:
                 return slot
+        
+        # All core slots filled, check optional slots conditionally
+        optional_slots = self.OPTIONAL_SLOTS.get(intent, [])
+        for slot in optional_slots:
+            if slot not in filled_slots:
+                # Check if this optional slot should be suggested
+                if self._should_suggest_optional_slot(slot, query, intent, entities, filled_slots):
+                    return slot
         
         return None  # All slots filled
 
@@ -199,18 +218,25 @@ class SlotRules:
         if entities.get('dates'):
             filled_slots.add('date')
         
-        # Check for time slot
-        if entities.get('times'):
+        # Check for time slot (only for flights and trains, not hotels)
+        if entities.get('times') and intent in ['flight', 'train']:
             filled_slots.add('time')
         
         # Check for class slot
         if entities.get('classes'):
             filled_slots.add('class')
         
+        # Check for passengers slot (flights and trains)
+        if entities.get('passengers') and intent in ['flight', 'train']:
+            filled_slots.add('passengers')
+        
         # Intent-specific slots
         if intent == 'flight':
             if entities.get('airlines'):
                 filled_slots.add('airline')
+            # Check for return date slot
+            if entities.get('return_dates') or self._has_slot_keyword(query_lower, 'return'):
+                filled_slots.add('return')
         elif intent == 'hotel':
             if self._has_slot_keyword(query_lower, 'checkin') or entities.get('checkin'):
                 filled_slots.add('checkin')
@@ -220,6 +246,12 @@ class SlotRules:
                 filled_slots.add('guests')
             if self._has_slot_keyword(query_lower, 'rooms'):
                 filled_slots.add('rooms')
+            # Check for nights slot
+            if entities.get('nights') or self._has_slot_keyword(query_lower, 'nights'):
+                filled_slots.add('nights')
+            # Check for category slot
+            if entities.get('category') or self._has_slot_keyword(query_lower, 'category'):
+                filled_slots.add('category')
             # City slot for hotels
             if entities.get('cities'):
                 filled_slots.add('city')
@@ -241,3 +273,80 @@ class SlotRules:
                 return True
         
         return False
+    
+    def _should_suggest_optional_slot(self, slot: str, query: str, intent: str, entities: Dict, filled_slots: Set[str]) -> bool:
+        """
+        Check if an optional slot should be suggested.
+        
+        Args:
+            slot: Optional slot name
+            query: Query text
+            intent: Detected intent
+            entities: Extracted entities
+            filled_slots: Set of already filled slots
+            
+        Returns:
+            True if slot should be suggested, False otherwise
+        """
+        query_lower = query.lower()
+        
+        # Return slot: only suggest if round trip context detected
+        if slot == 'return':
+            # Check for round trip keywords
+            round_trip_keywords = ['round trip', 'round-trip', 'return', 'returning', 'coming back']
+            for keyword in round_trip_keywords:
+                if keyword in query_lower:
+                    return True
+            # Don't suggest return if no round trip context
+            return False
+        
+        # Passengers slot: suggest if explicitly mentioned or if keyword detected
+        if slot == 'passengers':
+            # Check if passengers keyword is explicitly mentioned
+            if self._has_slot_keyword(query_lower, 'passengers'):
+                return True
+            # Check for "for [number] passengers/travelers" pattern
+            passenger_patterns = [
+                r'\bfor\s+\d+\s+(passengers?|travelers?|people|adults?)\b',
+                r'\b\d+\s+(passengers?|travelers?|people|adults?)\b',
+            ]
+            for pattern in passenger_patterns:
+                if self.pattern_matcher.match_pattern(query_lower, pattern):
+                    return True
+            # Don't suggest passengers unless explicitly mentioned
+            return False
+        
+        # Nights slot: suggest if keyword detected or flexible placement
+        if slot == 'nights':
+            # Check if nights keyword is mentioned
+            if self._has_slot_keyword(query_lower, 'nights'):
+                return True
+            # Check for "for [number] nights" pattern
+            nights_pattern = r'\bfor\s+\d+\s+nights?\b'
+            if self.pattern_matcher.match_pattern(query_lower, nights_pattern):
+                return True
+            # Can suggest nights after checkin is filled
+            if 'checkin' in filled_slots:
+                return True
+            return False
+        
+        # Category slot: suggest if keyword detected, otherwise low priority
+        if slot == 'category':
+            # Check if category keyword is mentioned
+            if self._has_slot_keyword(query_lower, 'category'):
+                return True
+            # Can suggest category after core slots are filled
+            return True
+        
+        # Time slot for trains: suggest if keyword detected
+        if slot == 'time' and intent == 'train':
+            # Check if time keyword is mentioned
+            if self._has_slot_keyword(query_lower, 'time'):
+                return True
+            # Can suggest time after date is filled
+            if 'date' in filled_slots:
+                return True
+            return False
+        
+        # Default: suggest if keyword detected
+        return self._has_slot_keyword(query_lower, slot)

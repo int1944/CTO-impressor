@@ -56,6 +56,10 @@ class SuggestionGenerator:
         'guests': 'for how many guests',
         'rooms': 'how many rooms',
         'quota': 'which quota',
+        'return': 'return date',
+        'passengers': 'for how many passengers',
+        'nights': 'for how many nights',
+        'category': 'property class',
         'intent': None,  # No placeholder for intent
     }
     
@@ -214,6 +218,14 @@ class SuggestionGenerator:
             entity_suggestions = self._get_guests_suggestions()
         elif next_slot == 'rooms':
             entity_suggestions = self._get_rooms_suggestions()
+        elif next_slot == 'return':
+            entity_suggestions = self._get_date_suggestions()  # Reuse date suggestions
+        elif next_slot == 'passengers':
+            entity_suggestions = self._get_passengers_suggestions()
+        elif next_slot == 'nights':
+            entity_suggestions = self._get_nights_suggestions()
+        elif next_slot == 'category':
+            entity_suggestions = self._get_category_suggestions()
         elif next_slot == 'quota':
             entity_suggestions = self._get_quota_suggestions()
         
@@ -370,3 +382,15 @@ class SuggestionGenerator:
     def _get_quota_suggestions(self) -> List[str]:
         """Get quota suggestions for trains."""
         return ['general', 'tatkal', 'ladies', 'senior citizen']
+    
+    def _get_passengers_suggestions(self) -> List[str]:
+        """Get passenger count suggestions."""
+        return ['1', '2', '3', '4', '5', '6', 'family']
+    
+    def _get_nights_suggestions(self) -> List[str]:
+        """Get nights count suggestions for hotels."""
+        return ['1', '2', '3', '4', '5', '7', '10', '14']
+    
+    def _get_category_suggestions(self) -> List[str]:
+        """Get property class/category suggestions for hotels."""
+        return ['budget', '3-star', '4-star', '5-star', 'luxury']
