@@ -83,6 +83,20 @@ export function useSuggestions(query, cursorPosition = null, context = {}) {
       setNextSlot(response.next_slot || null);
       setSource(response.source || null);
       setLatency(response.latency_ms || 0);
+      
+      // Debug logging for holiday queries
+      if (process.env.NODE_ENV === 'development') {
+        if (response.intent === 'holiday' || debouncedQuery.toLowerCase().includes('holiday') || debouncedQuery.toLowerCase().includes('vacation')) {
+          console.log('🎉 Holiday Query Detected:', {
+            query: debouncedQuery,
+            intent: response.intent,
+            nextSlot: response.next_slot,
+            source: response.source,
+            suggestionsCount: response.suggestions?.length || 0,
+            suggestions: response.suggestions
+          });
+        }
+      }
     } catch (err) {
       // Ignore abort errors
       if (err.name === 'AbortError' || err.name === 'CanceledError') {

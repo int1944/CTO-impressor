@@ -13,6 +13,7 @@ class SlotRules:
         'flight': ['intent', 'from', 'to', 'date', 'time', 'class', 'airline'],
         'hotel': ['intent', 'city', 'checkin', 'checkout', 'nights', 'guests', 'room_type', 'category', 'rooms'],
         'train': ['intent', 'from', 'to', 'date', 'class', 'quota'],
+        'holiday': ['intent', 'to', 'date', 'nights', 'passengers', 'theme', 'budget'],
     }
     
     # Optional slots (suggested conditionally, not in strict order)
@@ -20,6 +21,7 @@ class SlotRules:
         'flight': ['return', 'passengers'],
         'hotel': ['nights', 'category', 'room_type', 'guests'],
         'train': ['passengers', 'time'],
+        'holiday': ['theme', 'budget'],  # Theme and budget are optional
     }
     
     # Keywords that indicate a slot is being filled
@@ -41,6 +43,8 @@ class SlotRules:
         'nights': ['nights', 'night', 'days', 'day'],
         'category': ['star', 'stars', 'budget', 'luxury', 'deluxe', 'premium', 'category', 'rating'],
         'room_type': ['single room', 'double room', 'suite', 'deluxe room'],
+        'theme': ['theme', 'honeymoon', 'adventure', 'beach', 'family', 'mountains', 'romantic', 'cultural', 'religious'],
+        'budget': ['budget', 'luxury', 'affordable', 'under', 'within', 'price', 'cost'],
     }
     
     def __init__(self):
@@ -80,6 +84,12 @@ class SlotRules:
             if 'to' not in filled_slots:
                 return 'to'
         
+        # For holidays, prioritize "to" before "date", but allow flexible ordering
+        if intent == 'holiday':
+            # Check if "to" is not filled
+            if 'to' not in filled_slots:
+                return 'to'
+        
         # Find first unfilled core slot
         for slot in slot_order:
             if slot not in filled_slots:
@@ -101,8 +111,8 @@ class SlotRules:
         last_slot = None
         last_index = -1
         
-        # Only consider slots relevant for this intent
-        valid_slots = set(self.SLOT_ORDER.get(intent, []))
+        # Consider both core and optional slots relevant for this intent
+        valid_slots = set(self.SLOT_ORDER.get(intent, [])).union(self.OPTIONAL_SLOTS.get(intent, []))
         
         for slot, keywords in self.SLOT_KEYWORDS.items():
             if slot not in valid_slots:
@@ -238,9 +248,13 @@ class SlotRules:
         if entities.get('classes'):
             filled_slots.add('class')
         
-        # Check for passengers slot (flights and trains)
-        if entities.get('passengers') and intent in ['flight', 'train']:
+        # Check for passengers slot (flights, trains, and holidays)
+        if entities.get('passengers') and intent in ['flight', 'train', 'holiday']:
             filled_slots.add('passengers')
+        
+        # Check for nights slot (hotels and holidays)
+        if entities.get('nights') and intent in ['hotel', 'holiday']:
+            filled_slots.add('nights')
         
         # Intent-specific slots
         if intent == 'flight':
@@ -277,6 +291,17 @@ class SlotRules:
         elif intent == 'train':
             if self._has_slot_keyword(query_lower, 'quota'):
                 filled_slots.add('quota')
+        elif intent == 'holiday':
+            # Check for 'to' slot - only mark as filled if there's a city after "to"
+            if self._has_slot_keyword(query_lower, 'to'):
+                if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'to'):
+                    filled_slots.add('to')
+            # Check for theme slot
+            if entities.get('themes') or self._has_slot_keyword(query_lower, 'theme'):
+                filled_slots.add('theme')
+            # Check for budget slot
+            if entities.get('budgets') or self._has_slot_keyword(query_lower, 'budget'):
+                filled_slots.add('budget')
         
         return filled_slots
 
