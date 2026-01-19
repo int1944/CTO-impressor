@@ -32,56 +32,52 @@ export function PlaceholderTags({ nextSlot, intent, onTagClick }) {
     ],
   };
 
-  // Get slots for current intent, or show intent options if no intent
-const slots =
-intent && slotMappings[intent]
-  ? slotMappings[intent]
-  : [
+  // Only show intent selection buttons when no intent is detected
+  if (!intent) {
+    const intentOptions = [
       { key: "flight", label: "Flights", insertText: "Book a flight" },
       { key: "hotel", label: "Hotels", insertText: "Book a hotel" },
       { key: "train", label: "Trains", insertText: "Book a train" },
       { key: "holiday", label: "Holidays", insertText: "Book a holiday package" },
     ];
-
-if (!nextSlot && !intent) {
-// Show intent selection when no intent is determined
-return (
-  <div className="flex flex-wrap gap-2 mt-3">
-    {slots.map((slot) => (
-      <button
-        key={slot.key}
-        onClick={() => onTagClick && onTagClick(slot.key, slot.insertText)}
-        className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow-md"
-      >
-        {slot.label}
-      </button>
-    ))}
-  </div>
-);
-}
-
-if (!nextSlot || slots.length === 0) {
-return null;
-}
-  return (
-    <div className="flex flex-wrap gap-2 mt-3">
-      {slots.map((slot) => {
-        const isActive = slot.key === nextSlot;
-
-        return (
+    
+    return (
+      <div className="flex flex-wrap gap-2 mt-3 justify-center">
+        {intentOptions.map((option) => (
           <button
-            key={slot.key}
-            onClick={() => onTagClick && onTagClick(slot.key)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-              isActive
-                ? "bg-pink-200 text-pink-800 shadow-md"
-                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-            }`}
+            key={option.key}
+            onClick={() => onTagClick && onTagClick(option.key, option.insertText)}
+            className="px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 bg-blue-100 text-blue-700 hover:bg-blue-200 hover:shadow-md"
           >
-            {slot.label}
+            {option.label}
           </button>
-        );
-      })}
+        ))}
+      </div>
+    );
+  }
+
+  // Get slots for current intent
+  const slots = intent && slotMappings[intent] ? slotMappings[intent] : [];
+
+  // Show slots for the detected intent
+  if (slots.length === 0) {
+    return null;
+  }
+
+  const activeSlot = slots.find((slot) => slot.key === nextSlot);
+  if (!activeSlot) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-3 justify-center">
+      <button
+        key={activeSlot.key}
+        onClick={() => onTagClick && onTagClick(activeSlot.key)}
+        className="px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 bg-red-100 text-red-700 shadow-md ring-2 ring-red-400"
+      >
+        {activeSlot.label}
+      </button>
     </div>
   );
 }

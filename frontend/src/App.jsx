@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { TravelInput } from "./components/TravelInput";
 import { SuggestionBox } from "./components/SuggestionBox";
-import { PlaceholderTags } from "./components/PlaceholderTags";
 import { CalendarWidget } from "./components/CalendarWidget";
 import { CityListWidget } from "./components/CityListWidget";
 import { IntentWidget } from "./components/IntentWidget";
@@ -11,6 +10,7 @@ import { NumberWidget } from "./components/NumberWidget";
 import { CategoryWidget } from "./components/CategoryWidget";
 import { QuotaWidget } from "./components/QuotaWidget";
 import { AirlineWidget } from "./components/AirlineWidget";
+import { PlaceholderTags } from "./components/PlaceholderTags";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { insertEntity } from "./utils/queryBuilder";
 import mmtLogo from "./assets/Makemytrip_logo.svg";
@@ -34,6 +34,12 @@ function App() {
       return suggestions[0].text;
     }
     return null;
+  };
+
+  // Get only clickable entity suggestions (exclude placeholders)
+  const getClickableSuggestions = () => {
+    if (!suggestions || suggestions.length === 0) return [];
+    return suggestions.filter(s => s.selectable && !s.is_placeholder);
   };
 
   // Format suggestion with placeholder keyword (like test_live.py)
@@ -176,32 +182,50 @@ function App() {
   };
 
   const handleTagClick = (slotKey, insertText) => {
-    // If insertText is provided (intent selection), add it to the query
     if (insertText) {
       const trimmedQuery = query.trim();
       let newQuery;
-      
-      // Check if query ends with "a" and insertText starts with "a"
-      if (trimmedQuery.endsWith(' a') && insertText.startsWith('a ')) {
-        // Remove the trailing "a" and add the insertText
-        newQuery = trimmedQuery.slice(0, -2) + ' ' + insertText;
-      } else if (trimmedQuery === 'a' && insertText.startsWith('a ')) {
-        // If query is just "a", replace it entirely
+
+      if (trimmedQuery.endsWith(" a") && insertText.startsWith("a ")) {
+        newQuery = trimmedQuery.slice(0, -2) + " " + insertText;
+      } else if (trimmedQuery === "a" && insertText.startsWith("a ")) {
         newQuery = insertText;
-      } else if (trimmedQuery.endsWith('a') && insertText.startsWith('a ')) {
-        // If ends with "a" but no space, add space and avoid duplication
+      } else if (trimmedQuery.endsWith("a") && insertText.startsWith("a ")) {
         newQuery = trimmedQuery.slice(0, -1) + insertText;
       } else {
-        // Normal case: just append with a space
         newQuery = trimmedQuery ? `${trimmedQuery} ${insertText}` : insertText;
       }
-      
+
       setQuery(newQuery);
-    } else {
-      // For regular slot clicks, just log for now
-      console.log("Tag clicked:", slotKey);
+      return;
+    }
+
+    const slotKeywordMap = {
+      from: "from",
+      to: "to",
+      date: "on",
+      return: "returning on",
+      time: "at",
+      class: "in",
+      airline: "on",
+      city: "in",
+      checkin: "check-in",
+      checkout: "check-out",
+      guests: "for",
+      rooms: "for",
+      nights: "for",
+      category: "in",
+      quota: "in",
+    };
+
+    const keyword = slotKeywordMap[slotKey];
+    if (keyword) {
+      const trimmedQuery = query.trim();
+      const newQuery = trimmedQuery ? `${trimmedQuery} ${keyword}` : keyword;
+      setQuery(newQuery);
     }
   };
+
 
   const handleSubmit = (finalQuery) => {
     console.log("Submitting query:", finalQuery);
@@ -274,8 +298,25 @@ function App() {
       (s) => s.entity_type === "airline" && !s.is_placeholder
     );
 
+  const hasWidgetForNextSlot =
+    showIntentWidget ||
+    showCalendar ||
+    showCityWidget ||
+    showTimeWidget ||
+    showClassWidget ||
+    showPassengersWidget ||
+    showGuestsWidget ||
+    showNightsWidget ||
+    showRoomsWidget ||
+    showCategoryWidget ||
+    showQuotaWidget ||
+    showAirlineWidget;
+
+  // Inline suggestions only when no dedicated widget applies
+  const showInlineSuggestions = !hasWidgetForNextSlot;
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 pb-40 relative">
       {/* Floating decorative elements */}
       <div className="absolute top-20 left-10 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
@@ -307,20 +348,21 @@ function App() {
               onSubmit={handleSubmit}
               cursorPosition={cursorPosition}
               onCursorChange={setCursorPosition}
+              placeholder={getPlaceholderText()}
+              suggestions={showInlineSuggestions ? getClickableSuggestions() : []}
+            />
+            <PlaceholderTags
+              nextSlot={nextSlot}
+              intent={intent}
+              onTagClick={handleTagClick}
             />
 
-            {/* Placeholder Tags */}
-            <PlaceholderTags
-                nextSlot={nextSlot}
-                intent={intent}
-                onTagClick={handleTagClick}
-              />
           </div>
 
            {/* Widgets Section */}
            <div className="flex flex-wrap gap-4 justify-center">
              {/* Intent Widget */}
-             {showIntentWidget && (
+            {showIntentWidget && !showInlineSuggestions && (
                <IntentWidget
                  suggestions={suggestions}
                  onIntentSelect={handleSuggestionClick}
@@ -335,8 +377,8 @@ function App() {
                />
              )}
 
-             {/* City List Widget */}
-             {showCityWidget && (
+             {/* City List Widget - Hide when inline suggestions are showing */}
+            {showCityWidget && !showInlineSuggestions && (
                <CityListWidget
                  suggestions={suggestions}
                  onCitySelect={handleSuggestionClick}
@@ -344,16 +386,16 @@ function App() {
                />
              )}
 
-             {/* Time Widget */}
-             {showTimeWidget && (
+             {/* Time Widget - Hide when inline suggestions showing */}
+            {showTimeWidget && !showInlineSuggestions && (
                <TimeWidget
                  suggestions={suggestions}
                  onTimeSelect={handleSuggestionClick}
                />
              )}
 
-             {/* Class Widget */}
-             {showClassWidget && (
+             {/* Class Widget - Hide when inline suggestions showing */}
+            {showClassWidget && !showInlineSuggestions && (
                <ClassWidget
                  suggestions={suggestions}
                  onClassSelect={handleSuggestionClick}
@@ -361,8 +403,8 @@ function App() {
                />
              )}
 
-             {/* Passengers Widget */}
-             {showPassengersWidget && (
+             {/* Passengers Widget - Hide when inline suggestions showing */}
+            {showPassengersWidget && !showInlineSuggestions && (
                <NumberWidget
                  suggestions={suggestions}
                  onNumberSelect={handleSuggestionClick}
@@ -370,8 +412,8 @@ function App() {
                />
              )}
 
-             {/* Guests Widget */}
-             {showGuestsWidget && (
+             {/* Guests Widget - Hide when inline suggestions showing */}
+            {showGuestsWidget && !showInlineSuggestions && (
                <NumberWidget
                  suggestions={suggestions}
                  onNumberSelect={handleSuggestionClick}
@@ -379,8 +421,8 @@ function App() {
                />
              )}
 
-             {/* Nights Widget */}
-             {showNightsWidget && (
+             {/* Nights Widget - Hide when inline suggestions showing */}
+            {showNightsWidget && !showInlineSuggestions && (
                <NumberWidget
                  suggestions={suggestions}
                  onNumberSelect={handleSuggestionClick}
@@ -388,8 +430,8 @@ function App() {
                />
              )}
 
-             {/* Rooms Widget */}
-             {showRoomsWidget && (
+             {/* Rooms Widget - Hide when inline suggestions showing */}
+            {showRoomsWidget && !showInlineSuggestions && (
                <NumberWidget
                  suggestions={suggestions}
                  onNumberSelect={handleSuggestionClick}
@@ -397,24 +439,24 @@ function App() {
                />
              )}
 
-             {/* Category Widget */}
-             {showCategoryWidget && (
+             {/* Category Widget - Hide when inline suggestions showing */}
+            {showCategoryWidget && !showInlineSuggestions && (
                <CategoryWidget
                  suggestions={suggestions}
                  onCategorySelect={handleSuggestionClick}
                />
              )}
 
-             {/* Quota Widget */}
-             {showQuotaWidget && (
+             {/* Quota Widget - Hide when inline suggestions showing */}
+            {showQuotaWidget && !showInlineSuggestions && (
                <QuotaWidget
                  suggestions={suggestions}
                  onQuotaSelect={handleSuggestionClick}
                />
              )}
 
-             {/* Airline Widget */}
-             {showAirlineWidget && (
+             {/* Airline Widget - Hide when inline suggestions showing */}
+            {showAirlineWidget && !showInlineSuggestions && (
                <AirlineWidget
                  suggestions={suggestions}
                  onAirlineSelect={handleSuggestionClick}
@@ -425,6 +467,7 @@ function App() {
 
         {/* Suggestion Box (Floating) - Only show when no specialized widget is active */}
         {suggestions.length > 0 && 
+         !showInlineSuggestions &&
          !showIntentWidget && 
          !showCalendar && 
          !showCityWidget && 
@@ -448,12 +491,14 @@ function App() {
 
         {/* Debug Info (can be removed in production) */}
         {process.env.NODE_ENV === "development" && (
-          <div className="mt-8 p-4 glass-card rounded-xl text-xs text-white/80">
-            <div>Intent: {intent || "None"}</div>
-            <div>Next Slot: {nextSlot || "None"}</div>
-            <div>Source: {source || "None"}</div>
-            <div>Latency: {latency}ms</div>
-            <div>Suggestions: {suggestions.length}</div>
+          <div className="fixed bottom-4 left-4 z-10 pointer-events-none max-w-xs">
+            <div className="glass-card rounded-xl text-xs text-white/80 p-4">
+              <div>Intent: {intent || "None"}</div>
+              <div>Next Slot: {nextSlot || "None"}</div>
+              <div>Source: {source || "None"}</div>
+              <div>Latency: {latency}ms</div>
+              <div>Suggestions: {suggestions.length}</div>
+            </div>
           </div>
         )}
       </div>
