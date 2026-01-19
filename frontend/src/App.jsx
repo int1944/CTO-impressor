@@ -77,6 +77,7 @@ function App() {
       }
     } else {
       // Check if query ends with the keyword (with space, without space, or as last word)
+      // This handles cases like "flight from" -> don't add "from" again
       if (lastWord === placeholderFirst || 
           queryLower.endsWith(' ' + placeholderFirst) || 
           queryLower.endsWith(placeholderFirst)) {
