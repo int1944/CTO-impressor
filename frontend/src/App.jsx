@@ -4,6 +4,13 @@ import { SuggestionBox } from "./components/SuggestionBox";
 import { PlaceholderTags } from "./components/PlaceholderTags";
 import { CalendarWidget } from "./components/CalendarWidget";
 import { CityListWidget } from "./components/CityListWidget";
+import { IntentWidget } from "./components/IntentWidget";
+import { TimeWidget } from "./components/TimeWidget";
+import { ClassWidget } from "./components/ClassWidget";
+import { NumberWidget } from "./components/NumberWidget";
+import { CategoryWidget } from "./components/CategoryWidget";
+import { QuotaWidget } from "./components/QuotaWidget";
+import { AirlineWidget } from "./components/AirlineWidget";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { insertEntity } from "./utils/queryBuilder";
 import mmtLogo from "./assets/Makemytrip_logo.svg";
@@ -22,6 +29,25 @@ function App() {
 
   const handleSuggestionClick = (suggestion) => {
     if (!suggestion.selectable || suggestion.is_placeholder) return;
+
+    // Special handling for intent suggestions
+    if (suggestion.entity_type === 'intent') {
+      // For intent, just append the intent word (e.g., "flight", "hotel", "train")
+      const trimmedQuery = query.trim();
+      let newQuery;
+      
+      // Handle cases like "book a" -> "book a flight"
+      if (trimmedQuery.endsWith(' a') || trimmedQuery === 'a') {
+        newQuery = trimmedQuery.replace(/\s*a\s*$/, '') + ' ' + suggestion.text;
+      } else if (trimmedQuery.endsWith('book') || trimmedQuery.includes('want to book')) {
+        newQuery = trimmedQuery + ' a ' + suggestion.text;
+      } else {
+        // Just append the intent
+        newQuery = trimmedQuery ? `${trimmedQuery} ${suggestion.text}` : suggestion.text;
+      }
+      setQuery(newQuery);
+      return;
+    }
 
     const newQuery = insertEntity(
       query,
@@ -92,6 +118,56 @@ function App() {
           s.entity_type === "city") &&
         !s.is_placeholder
     );
+  const showIntentWidget =
+    nextSlot === "intent" ||
+    suggestions.some(
+      (s) => s.entity_type === "intent" && !s.is_placeholder
+    );
+  const showTimeWidget =
+    nextSlot === "time" ||
+    suggestions.some(
+      (s) => s.entity_type === "time" && !s.is_placeholder
+    );
+  const showClassWidget =
+    nextSlot === "class" ||
+    suggestions.some(
+      (s) => s.entity_type === "class" && !s.is_placeholder
+    );
+  const showPassengersWidget =
+    nextSlot === "passengers" ||
+    suggestions.some(
+      (s) => s.entity_type === "passengers" && !s.is_placeholder
+    );
+  const showGuestsWidget =
+    nextSlot === "guests" ||
+    suggestions.some(
+      (s) => s.entity_type === "guests" && !s.is_placeholder
+    );
+  const showNightsWidget =
+    nextSlot === "nights" ||
+    suggestions.some(
+      (s) => s.entity_type === "nights" && !s.is_placeholder
+    );
+  const showRoomsWidget =
+    nextSlot === "rooms" ||
+    suggestions.some(
+      (s) => s.entity_type === "rooms" && !s.is_placeholder
+    );
+  const showCategoryWidget =
+    nextSlot === "category" ||
+    suggestions.some(
+      (s) => s.entity_type === "category" && !s.is_placeholder
+    );
+  const showQuotaWidget =
+    nextSlot === "quota" ||
+    suggestions.some(
+      (s) => s.entity_type === "quota" && !s.is_placeholder
+    );
+  const showAirlineWidget =
+    nextSlot === "airline" ||
+    suggestions.some(
+      (s) => s.entity_type === "airline" && !s.is_placeholder
+    );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
@@ -136,25 +212,110 @@ function App() {
               />
           </div>
 
-          {/* Widgets Section */}
-          <div className="flex flex-wrap gap-4 justify-center">
-            {/* Calendar Widget */}
-            {showCalendar && (
-              <CalendarWidget
-                onDateSelect={handleDateSelect}
-                selectedDate={selectedDate}
-              />
-            )}
+           {/* Widgets Section */}
+           <div className="flex flex-wrap gap-4 justify-center">
+             {/* Intent Widget */}
+             {showIntentWidget && (
+               <IntentWidget
+                 suggestions={suggestions}
+                 onIntentSelect={handleSuggestionClick}
+               />
+             )}
 
-            {/* City List Widget */}
-            {showCityWidget && (
-              <CityListWidget
-                suggestions={suggestions}
-                onCitySelect={handleSuggestionClick}
-                entityType={nextSlot}
-              />
-            )}
-          </div>
+             {/* Calendar Widget */}
+             {showCalendar && (
+               <CalendarWidget
+                 onDateSelect={handleDateSelect}
+                 selectedDate={selectedDate}
+               />
+             )}
+
+             {/* City List Widget */}
+             {showCityWidget && (
+               <CityListWidget
+                 suggestions={suggestions}
+                 onCitySelect={handleSuggestionClick}
+                 entityType={nextSlot}
+               />
+             )}
+
+             {/* Time Widget */}
+             {showTimeWidget && (
+               <TimeWidget
+                 suggestions={suggestions}
+                 onTimeSelect={handleSuggestionClick}
+               />
+             )}
+
+             {/* Class Widget */}
+             {showClassWidget && (
+               <ClassWidget
+                 suggestions={suggestions}
+                 onClassSelect={handleSuggestionClick}
+                 intent={intent}
+               />
+             )}
+
+             {/* Passengers Widget */}
+             {showPassengersWidget && (
+               <NumberWidget
+                 suggestions={suggestions}
+                 onNumberSelect={handleSuggestionClick}
+                 slotType="passengers"
+               />
+             )}
+
+             {/* Guests Widget */}
+             {showGuestsWidget && (
+               <NumberWidget
+                 suggestions={suggestions}
+                 onNumberSelect={handleSuggestionClick}
+                 slotType="guests"
+               />
+             )}
+
+             {/* Nights Widget */}
+             {showNightsWidget && (
+               <NumberWidget
+                 suggestions={suggestions}
+                 onNumberSelect={handleSuggestionClick}
+                 slotType="nights"
+               />
+             )}
+
+             {/* Rooms Widget */}
+             {showRoomsWidget && (
+               <NumberWidget
+                 suggestions={suggestions}
+                 onNumberSelect={handleSuggestionClick}
+                 slotType="rooms"
+               />
+             )}
+
+             {/* Category Widget */}
+             {showCategoryWidget && (
+               <CategoryWidget
+                 suggestions={suggestions}
+                 onCategorySelect={handleSuggestionClick}
+               />
+             )}
+
+             {/* Quota Widget */}
+             {showQuotaWidget && (
+               <QuotaWidget
+                 suggestions={suggestions}
+                 onQuotaSelect={handleSuggestionClick}
+               />
+             )}
+
+             {/* Airline Widget */}
+             {showAirlineWidget && (
+               <AirlineWidget
+                 suggestions={suggestions}
+                 onAirlineSelect={handleSuggestionClick}
+               />
+             )}
+           </div>
         </div>
 
         {/* Suggestion Box (Floating) */}

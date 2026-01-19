@@ -125,6 +125,18 @@ export function insertEntity(query, entity, entityType) {
       }
       break;
 
+    case "intent":
+      // For intent, handle special cases like "book a" -> "book a flight"
+      const trimmedQuery = query.trim();
+      if (trimmedQuery.endsWith(' a') || trimmedQuery === 'a') {
+        return trimmedQuery.replace(/\s*a\s*$/, '') + ' ' + entity;
+      } else if (trimmedQuery.endsWith('book') || trimmedQuery.includes('want to book')) {
+        return trimmedQuery + ' a ' + entity;
+      } else {
+        // Just append the intent
+        return trimmedQuery ? `${trimmedQuery} ${entity}` : entity;
+      }
+
     default:
       // Default: append to end
       return query + (query.endsWith(" ") ? "" : " ") + entity;

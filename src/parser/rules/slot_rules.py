@@ -250,6 +250,13 @@ class SlotRules:
             if entities.get('return_dates') or self._has_slot_keyword(query_lower, 'return'):
                 filled_slots.add('return')
         elif intent == 'hotel':
+            # City slot for hotels - check if city is mentioned with "in" keyword
+            if self._has_slot_keyword(query_lower, 'city') or entities.get('cities'):
+                # Only mark city as filled if there's a city entity AND it appears after "in" keyword
+                if entities.get('cities'):
+                    # Check if city appears after "in" keyword
+                    if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'in'):
+                        filled_slots.add('city')
             if self._has_slot_keyword(query_lower, 'checkin') or entities.get('checkin'):
                 filled_slots.add('checkin')
             if self._has_slot_keyword(query_lower, 'checkout') or entities.get('checkout'):
@@ -267,9 +274,6 @@ class SlotRules:
             # Check for room type slot
             if entities.get('room_types') or self._has_slot_keyword(query_lower, 'room_type'):
                 filled_slots.add('room_type')
-            # City slot for hotels
-            if entities.get('cities'):
-                filled_slots.add('city')
         elif intent == 'train':
             if self._has_slot_keyword(query_lower, 'quota'):
                 filled_slots.add('quota')
