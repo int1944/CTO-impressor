@@ -22,7 +22,12 @@ export function useSuggestions(query, cursorPosition = null, context = {}) {
 
   const fetchSuggestions = useCallback(async () => {
     if (!debouncedQuery.trim()) {
+      // Reset all state when query is empty
       setSuggestions([]);
+      setIntent(null);
+      setNextSlot(null);
+      setSource(null);
+      setLatency(0);
       setLoading(false);
       return;
     }
