@@ -25,7 +25,7 @@ class TestRuleEngine:
         assert match is not None
         assert match.intent == "flight"
         assert match.confidence > 0.75
-
+    
     def test_flight_round_trip_intent(self):
         """Test round-trip flight intent detection."""
         query = "Book a round-trip flight from Delhi to Mumbai"

@@ -849,7 +849,7 @@ class EntityRules:
                 found_hotels.append(hotel)
         
         return found_hotels
-    
+
     def _extract_return_dates(self, query: str) -> List[Dict[str, str]]:
         """Extract return dates separately from departure dates."""
         return_dates = []
