@@ -5,3 +5,4 @@ __pycache__/
 .Python
 *.gguf
 *.DS_Store
+*.rdb
