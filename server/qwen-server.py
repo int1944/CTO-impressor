@@ -541,7 +541,7 @@ RULES:
     }
     
     # Apply mapping to response
-    mapped_response = response_mapping.get(response, response)
+    mapped_response = response_mapping.get(response, "None")
     if mapped_response != response:
         print(f"DEBUG - Mapped '{response}' to '{mapped_response}'")
         response = mapped_response
