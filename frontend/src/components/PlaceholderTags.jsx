@@ -74,8 +74,8 @@ return null;
             onClick={() => onTagClick && onTagClick(slot.key)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
               isActive
-                ? "bg-red-100 text-red-700 shadow-md ring-2 ring-red-400"
-                : "bg-white/80 text-gray-600 hover:bg-white hover:shadow-md"
+                ? "bg-pink-200 text-pink-800 shadow-md"
+                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
             }`}
           >
             {slot.label}
