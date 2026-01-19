@@ -579,7 +579,7 @@ RULES:
         "meal [preference]": "meal",
         "berth [preference]": "berth",
         # LOB suggestions (keep as-is)
-        "book a [flight/hotel/train/holiday]": "book a [flight/hotel/train/holiday]",
+        "book a [flight/hotel/train/holiday]": "intent",
     }
 
     # Apply mapping to response
