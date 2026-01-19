@@ -105,7 +105,7 @@ class RuleEngine:
             return city_from_match
         
         # No match found
-        print("No match found")
+        # print("No match found")  # Commented out - normal behavior when using LLM fallback
         return None
     
     def _match_partial_intent(self, query: str) -> Optional[RuleMatch]:
