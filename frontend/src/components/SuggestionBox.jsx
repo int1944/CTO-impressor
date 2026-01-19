@@ -15,10 +15,18 @@ export function SuggestionBox({ suggestions, onSuggestionClick, loading }) {
   }
 
   // Separate placeholders from selectable suggestions
-  const placeholders = suggestions.filter((s) => s.is_placeholder);
+  const placeholders = suggestions.filter((s) => s.is_placeholder === true);
   const selectable = suggestions.filter(
-    (s) => !s.is_placeholder && s.selectable
+    (s) => s.is_placeholder !== true && (s.selectable === true || s.selectable === undefined)
   );
+  
+  // Debug logging (remove in production)
+  if (process.env.NODE_ENV === 'development' && suggestions.length > 0) {
+    console.log('SuggestionBox - Total suggestions:', suggestions.length);
+    console.log('SuggestionBox - Placeholders:', placeholders.length);
+    console.log('SuggestionBox - Selectable:', selectable.length);
+    console.log('SuggestionBox - All suggestions:', suggestions);
+  }
 
   return (
     <div className="translucent-card rounded-2xl p-4 shadow-lg glow-effect max-w-md animate-fade-in">
