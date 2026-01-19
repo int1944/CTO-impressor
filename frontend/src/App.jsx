@@ -43,9 +43,32 @@ function App() {
     setQuery(newQuery);
   };
 
-  const handleTagClick = (slotKey) => {
-    // This could trigger a specific widget or add placeholder text
-    console.log("Tag clicked:", slotKey);
+  const handleTagClick = (slotKey, insertText) => {
+    // If insertText is provided (intent selection), add it to the query
+    if (insertText) {
+      const trimmedQuery = query.trim();
+      let newQuery;
+      
+      // Check if query ends with "a" and insertText starts with "a"
+      if (trimmedQuery.endsWith(' a') && insertText.startsWith('a ')) {
+        // Remove the trailing "a" and add the insertText
+        newQuery = trimmedQuery.slice(0, -2) + ' ' + insertText;
+      } else if (trimmedQuery === 'a' && insertText.startsWith('a ')) {
+        // If query is just "a", replace it entirely
+        newQuery = insertText;
+      } else if (trimmedQuery.endsWith('a') && insertText.startsWith('a ')) {
+        // If ends with "a" but no space, add space and avoid duplication
+        newQuery = trimmedQuery.slice(0, -1) + insertText;
+      } else {
+        // Normal case: just append with a space
+        newQuery = trimmedQuery ? `${trimmedQuery} ${insertText}` : insertText;
+      }
+      
+      setQuery(newQuery);
+    } else {
+      // For regular slot clicks, just log for now
+      console.log("Tag clicked:", slotKey);
+    }
   };
 
   const handleSubmit = (finalQuery) => {
@@ -105,13 +128,11 @@ function App() {
           />
 
           {/* Placeholder Tags */}
-          {nextSlot && (
-            <PlaceholderTags
-              nextSlot={nextSlot}
-              intent={intent}
-              onTagClick={handleTagClick}
-            />
-          )}
+          <PlaceholderTags
+            nextSlot={nextSlot}
+            intent={intent}
+            onTagClick={handleTagClick}
+          />
         </div>
 
         {/* Widgets Section */}
