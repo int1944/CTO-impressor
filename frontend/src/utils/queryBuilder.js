@@ -162,17 +162,36 @@ export function insertEntity(query, entity, entityType) {
       break;
 
     case "date":
+      // For holidays, check if "starting on" should be used
+      const isHolidayQuery = queryLower.includes("holiday") || queryLower.includes("vacation") || queryLower.includes("package");
+      
+      // Check if "starting on" exists (for holidays)
+      if (isHolidayQuery && (queryLower.includes(" starting on ") || queryLower.endsWith(" starting on"))) {
+        const startingOnMatch = query.match(
+          /\bstarting\s+on\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|in|from|to|$))/i
+        );
+        if (startingOnMatch) {
+          return query.replace(startingOnMatch[0], `starting on ${entity}`);
+        }
+        if (queryLower.endsWith(" starting on") || queryLower.endsWith("starting on")) {
+          return query.trim() + " " + entity;
+        }
+      }
+      
       // Check if date keyword exists
       if (queryLower.includes(" on ")) {
         const onMatch = query.match(
-          /\bon\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|in|from|to|$))/i
+          /\bon\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|in|from|to|starting|$))/i
         );
         if (onMatch) {
           return query.replace(onMatch[0], `on ${entity}`);
         }
       }
-      // Insert "on" if not present
-      if (!queryLower.includes(" on ")) {
+      
+      // Insert "starting on" for holidays if not present, otherwise "on"
+      if (isHolidayQuery && !queryLower.includes(" starting on ") && !queryLower.includes(" on ")) {
+        return query + (query.endsWith(" ") ? "" : " ") + `starting on ${entity}`;
+      } else if (!queryLower.includes(" on ")) {
         return query + (query.endsWith(" ") ? "" : " ") + `on ${entity}`;
       }
       break;
@@ -336,6 +355,11 @@ export function insertEntity(query, entity, entityType) {
         // Just append the intent
         return trimmedQuery ? `${trimmedQuery} ${entity}` : entity;
       }
+
+    case "theme":
+    case "budget":
+      // For theme and budget, just append to end (no keyword prefix)
+      return query + (query.endsWith(" ") ? "" : " ") + entity;
 
     default:
       // Default: append to end

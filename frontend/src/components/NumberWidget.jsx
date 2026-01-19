@@ -20,7 +20,7 @@ export function NumberWidget({ suggestions, onNumberSelect, slotType }) {
     const labels = {
       passengers: "Number of passengers",
       guests: "Number of guests",
-      nights: "Number of nights",
+      nights: "Number of nights / days",
       rooms: "Number of rooms",
     };
     return labels[type] || "Select number";

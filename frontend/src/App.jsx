@@ -10,6 +10,8 @@ import { NumberWidget } from "./components/NumberWidget";
 import { CategoryWidget } from "./components/CategoryWidget";
 import { QuotaWidget } from "./components/QuotaWidget";
 import { AirlineWidget } from "./components/AirlineWidget";
+import { ThemeWidget } from "./components/ThemeWidget";
+import { BudgetWidget } from "./components/BudgetWidget";
 import { PlaceholderTags } from "./components/PlaceholderTags";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { insertEntity } from "./utils/queryBuilder";
@@ -50,16 +52,23 @@ function App() {
 
     const placeholderWords = placeholderText.trim().split(/\s+/);
     const placeholderFirst = placeholderWords[0]?.toLowerCase();
-    const prefixCandidates = new Set(['from', 'to', 'on', 'at', 'in', 'with', 'for', 'check-in', 'check-out']);
+    const placeholderSecond = placeholderWords[1]?.toLowerCase();
+    // Check for "starting on" (two words)
+    const isStartingOn = placeholderFirst === 'starting' && placeholderSecond === 'on';
+    const prefixCandidates = new Set(['from', 'to', 'on', 'at', 'in', 'with', 'for', 'check-in', 'check-out', 'starting']);
     
-    if (!placeholderFirst || !prefixCandidates.has(placeholderFirst)) {
+    if (!placeholderFirst || (!prefixCandidates.has(placeholderFirst) && !isStartingOn)) {
       return suggestionText;
     }
 
     const suggestionLower = suggestionText.toLowerCase().trim();
     
     // If suggestion already starts with the keyword, don't add it again
-    if (suggestionLower.startsWith(placeholderFirst + ' ')) {
+    if (isStartingOn) {
+      if (suggestionLower.startsWith('starting on ')) {
+        return suggestionText;
+      }
+    } else if (suggestionLower.startsWith(placeholderFirst + ' ')) {
       return suggestionText;
     }
 
@@ -93,6 +102,9 @@ function App() {
     }
 
     // Add the keyword prefix
+    if (isStartingOn) {
+      return `starting on ${suggestionText}`;
+    }
     return `${placeholderFirst} ${suggestionText}`;
   };
 
@@ -120,18 +132,36 @@ function App() {
 
     // Special handling for intent suggestions
     if (suggestion.entity_type === 'intent') {
-      // For intent, just append the intent word (e.g., "flight", "hotel", "train")
+      // For intent, just append the intent word (e.g., "flight", "hotel", "train", "holiday")
       const trimmedQuery = query.trim();
       let newQuery;
       
-      // Handle cases like "book a" -> "book a flight"
+      // Handle cases like "book a" -> "book a flight" or "book a holiday package"
       if (trimmedQuery.endsWith(' a') || trimmedQuery === 'a') {
-        newQuery = trimmedQuery.replace(/\s*a\s*$/, '') + ' ' + suggestion.text;
+        // For holiday, use "holiday package" instead of just "holiday"
+        if (suggestion.text.toLowerCase() === 'holiday') {
+          newQuery = trimmedQuery.replace(/\s*a\s*$/, '') + ' holiday package';
+        } else {
+          newQuery = trimmedQuery.replace(/\s*a\s*$/, '') + ' ' + suggestion.text;
+        }
       } else if (trimmedQuery.endsWith('book') || trimmedQuery.includes('want to book')) {
-        newQuery = trimmedQuery + ' a ' + suggestion.text;
+        // For holiday, use "holiday package" instead of just "holiday"
+        if (suggestion.text.toLowerCase() === 'holiday') {
+          newQuery = trimmedQuery + ' a holiday package';
+        } else {
+          newQuery = trimmedQuery + ' a ' + suggestion.text;
+        }
       } else {
-        // Just append the intent
-        newQuery = trimmedQuery ? `${trimmedQuery} ${suggestion.text}` : suggestion.text;
+        // For holiday, use "holiday package" if query suggests booking context
+        if (suggestion.text.toLowerCase() === 'holiday' && 
+            (trimmedQuery.toLowerCase().includes('book') || 
+             trimmedQuery.toLowerCase().includes('want') || 
+             trimmedQuery.toLowerCase().includes('need'))) {
+          newQuery = trimmedQuery ? `${trimmedQuery} holiday package` : 'holiday package';
+        } else {
+          // Just append the intent
+          newQuery = trimmedQuery ? `${trimmedQuery} ${suggestion.text}` : suggestion.text;
+        }
       }
       setQuery(newQuery);
       return;
@@ -216,6 +246,8 @@ function App() {
       nights: "for",
       category: "in",
       quota: "in",
+      theme: "",  // No keyword for theme
+      budget: "",  // No keyword for budget
     };
 
     const keyword = slotKeywordMap[slotKey];
@@ -235,7 +267,7 @@ function App() {
 
   // Determine which widget to show
   const showCalendar =
-    nextSlot === "date" || nextSlot === "checkin" || nextSlot === "checkout";
+    nextSlot === "date" || nextSlot === "checkin" || nextSlot === "checkout" || nextSlot === "return";
   const showCityWidget =
     nextSlot === "to" ||
     nextSlot === "from" ||
@@ -297,6 +329,16 @@ function App() {
     suggestions.some(
       (s) => s.entity_type === "airline" && !s.is_placeholder
     );
+  const showThemeWidget =
+    nextSlot === "theme" ||
+    suggestions.some(
+      (s) => s.entity_type === "theme" && !s.is_placeholder
+    );
+  const showBudgetWidget =
+    nextSlot === "budget" ||
+    suggestions.some(
+      (s) => s.entity_type === "budget" && !s.is_placeholder
+    );
 
   const hasWidgetForNextSlot =
     showIntentWidget ||
@@ -310,7 +352,9 @@ function App() {
     showRoomsWidget ||
     showCategoryWidget ||
     showQuotaWidget ||
-    showAirlineWidget;
+    showAirlineWidget ||
+    showThemeWidget ||
+    showBudgetWidget;
 
   // Inline suggestions only when no dedicated widget applies
   const showInlineSuggestions = !hasWidgetForNextSlot;
@@ -355,6 +399,7 @@ function App() {
               nextSlot={nextSlot}
               intent={intent}
               onTagClick={handleTagClick}
+              suggestions={suggestions}
             />
 
           </div>
@@ -462,6 +507,36 @@ function App() {
                  onAirlineSelect={handleSuggestionClick}
                />
              )}
+
+             {/* Theme Widget - Hide when inline suggestions showing */}
+            {showThemeWidget && !showInlineSuggestions && (
+               <ThemeWidget
+                 suggestions={suggestions}
+                 onThemeSelect={(theme) => {
+                   handleSuggestionClick({
+                     text: theme,
+                     entity_type: "theme",
+                     selectable: true,
+                     is_placeholder: false,
+                   });
+                 }}
+               />
+             )}
+
+             {/* Budget Widget - Hide when inline suggestions showing */}
+            {showBudgetWidget && !showInlineSuggestions && (
+               <BudgetWidget
+                 suggestions={suggestions}
+                 onBudgetSelect={(budget) => {
+                   handleSuggestionClick({
+                     text: budget,
+                     entity_type: "budget",
+                     selectable: true,
+                     is_placeholder: false,
+                   });
+                 }}
+               />
+             )}
            </div>
         </div>
 
@@ -479,7 +554,9 @@ function App() {
          !showRoomsWidget && 
          !showCategoryWidget && 
          !showQuotaWidget && 
-         !showAirlineWidget && (
+         !showAirlineWidget &&
+         !showThemeWidget &&
+         !showBudgetWidget && (
           <div className="flex justify-center animate-fade-in">
             <SuggestionBox
               suggestions={suggestions}

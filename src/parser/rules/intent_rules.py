@@ -78,6 +78,34 @@ class IntentRules:
             (r'\b(train)\s+ticket\b', 0.88),
             (r'\b(any\s+cheap|budget)\s+trains?\b', 0.86),
             (r'\b(tatkal)\s+ticket\b', 0.86),
+        ],
+        'holiday': [
+            (r'\b(book|want|need|looking for|search for|plan)\s+(a\s+)?(holiday|vacation|package|trip|tour)', 0.95),
+            (r'\b(holiday|vacation|package|trip|tour)\s+(to|for|starting|from)', 0.90),
+            (r'\b(holiday|vacation)\s+package\b', 0.92),
+            (r'\b(book|want|need)\s+(a\s+)?(holiday|vacation)\s+package\b', 0.95),
+            (r'\b(plan|planning)\s+(a\s+)?(holiday|vacation|trip|tour)\b', 0.90),
+            (r'\b(go\s+on|going\s+on)\s+(a\s+)?(vacation|holiday|trip)\b', 0.88),
+            (r'\b(i\s+want\s+to\s+go\s+on|i\s+want\s+a)\s+(vacation|holiday)\b', 0.90),
+            (r'\b(holiday|vacation)\s+to\s+[^\s]+\b', 0.88),
+            (r'\b(week[-\s]?long|weekend|long\s+weekend)\s+(holiday|vacation|trip)\b', 0.85),
+            (r'\b(\d+[-\s]?day|days?)\s+(holiday|vacation|trip|package)\b', 0.88),
+            (r'\b(holiday|vacation)\s+for\s+(\d+)\s+(days?|nights?)\b', 0.88),
+            # Additional patterns for better coverage
+            (r'\b(holiday|vacation|package|trip|tour)\b', 0.80),  # Standalone words (lower confidence)
+            (r'\b(i\s+want|i\s+need|i\s+am\s+looking)\s+(a\s+)?(holiday|vacation|package)\b', 0.92),
+            (r'\b(want|need|looking for)\s+(a\s+)?(holiday|vacation|package)\b', 0.90),
+            (r'\b(book|book\s+me)\s+(a\s+)?(holiday|vacation|package|trip)\b', 0.93),
+            (r'\b(holiday|vacation)\s+(package|trip|tour)\b', 0.90),
+            (r'\b(travel|trip|tour)\s+(package|plan)\b', 0.85),
+            # Patterns for queries without explicit "holiday/vacation" but with holiday context
+            (r'\b(i\s+want\s+to\s+go\s+to|going\s+to|want\s+to\s+go)\s+[^\s]+\s+(next\s+month|next\s+week|next\s+weekend|tomorrow|starting|for\s+\d+)', 0.82),
+            (r'\b(i\s+want\s+to\s+go|going|want\s+to\s+go)\s+to\s+[^\s]+\s+(with\s+my\s+family|for\s+family|for\s+\d+\s+days)', 0.80),
+            # Standalone holiday/vacation words (lower confidence to avoid false positives)
+            (r'^\s*(holiday|vacation|package|trip|tour)\s*$', 0.78),
+            # More variations
+            (r'\b(book|want|need)\s+(holiday|vacation|package|trip|tour)\b', 0.88),
+            (r'\b(holiday|vacation|package)\s+(to|for|in)\b', 0.85),
         ]
     }
     

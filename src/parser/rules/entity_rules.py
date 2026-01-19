@@ -53,6 +53,32 @@ class EntityRules:
         (r'\b(5-star|4-star|3-star|2-star|1-star)\b', 'category'),
     ]
 
+    # Holiday-specific patterns
+    HOLIDAY_THEME_PATTERNS = [
+        (r'\b(honeymoon|romantic|couple)\b', 'honeymoon'),
+        (r'\b(adventure|trekking|hiking|mountaineering)\b', 'adventure'),
+        (r'\b(beach|seaside|coastal|island)\b', 'beach'),
+        (r'\b(family|kids|children|with family)\b', 'family'),
+        (r'\b(mountains?|hill station|hills?)\b', 'mountains'),
+        (r'\b(cultural|heritage|historical|temple|religious)\b', 'cultural'),
+        (r'\b(wildlife|safari|jungle)\b', 'wildlife'),
+        (r'\b(spiritual|pilgrimage|yoga|meditation)\b', 'spiritual'),
+    ]
+
+    HOLIDAY_BUDGET_PATTERNS = [
+        (r'\b(under|within|less than|below)\s+(₹|rs\.?|inr|usd|eur|\$)?\s*\d+[,\d]*\b', 'budget_max'),
+        (r'\b(budget|economy|affordable|cheap)\b', 'budget_low'),
+        (r'\b(luxury|premium|deluxe|high-end)\b', 'budget_high'),
+        (r'\b(mid-range|moderate|standard)\b', 'budget_mid'),
+    ]
+
+    HOLIDAY_DURATION_PATTERNS = [
+        (r'\b(for\s+)?(\d+)\s+(days?|nights?)\b', 'duration_days'),
+        (r'\b(one|two|three|four|five|six|seven|eight|nine|ten)\s+(days?|nights?)\b', 'duration_word'),
+        (r'\b(\d+)[-\s]?day\s+(holiday|vacation|package|trip)\b', 'duration_day'),
+        (r'\b(week[-\s]?long|weekend|long\s+weekend)\b', 'duration_week'),
+    ]
+
     DATE_RANGE_PATTERNS = [
         (r'\b(between|from)\s+(.+?)\s+(and|to)\s+(.+?)\b', 'date_range'),
         (r'\b(\d{1,2})(st|nd|rd|th)?\s+to\s+(\d{1,2})(st|nd|rd|th)?\b', 'date_range'),
@@ -332,6 +358,8 @@ class EntityRules:
             'classes': [],
             'airlines': [],
             'hotels': [],
+            'themes': [],
+            'budgets': [],
         }
         
         # Extract cities
@@ -408,6 +436,12 @@ class EntityRules:
             entities['airlines'] = self._extract_airlines(query)
         elif intent == 'hotel':
             entities['hotels'] = self._extract_hotels(query)
+        elif intent == 'holiday':
+            entities['themes'] = self._extract_holiday_themes(query)
+            entities['budgets'] = self._extract_holiday_budgets(query)
+            # For holidays, "nights" can also be called "days"
+            if not entities['nights']:
+                entities['nights'] = self._extract_holiday_duration(query)
         
         return entities
     
@@ -897,3 +931,51 @@ class EntityRules:
                 })
         
         return categories
+    
+    def _extract_holiday_themes(self, query: str) -> List[Dict[str, str]]:
+        """Extract holiday theme preferences."""
+        themes = []
+        query_lower = query.lower()
+        
+        for pattern, theme_type in self.HOLIDAY_THEME_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                themes.append({
+                    'text': match.group(0),
+                    'type': theme_type,
+                    'raw': match.group(0)
+                })
+        
+        return themes
+    
+    def _extract_holiday_budgets(self, query: str) -> List[Dict[str, str]]:
+        """Extract holiday budget preferences."""
+        budgets = []
+        query_lower = query.lower()
+        
+        for pattern, budget_type in self.HOLIDAY_BUDGET_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                budgets.append({
+                    'text': match.group(0),
+                    'type': budget_type,
+                    'raw': match.group(0)
+                })
+        
+        return budgets
+    
+    def _extract_holiday_duration(self, query: str) -> List[Dict[str, str]]:
+        """Extract holiday duration (days/nights)."""
+        durations = []
+        query_lower = query.lower()
+        
+        for pattern, duration_type in self.HOLIDAY_DURATION_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                durations.append({
+                    'text': match.group(0),
+                    'type': duration_type,
+                    'raw': match.group(0)
+                })
+        
+        return durations
