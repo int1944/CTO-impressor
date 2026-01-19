@@ -1,4 +1,4 @@
-export function PlaceholderTags({ nextSlot, intent, onTagClick }) {
+export function PlaceholderTags({ nextSlot, intent, onTagClick, suggestions = [] }) {
   // Define slot mappings for each intent
   const slotMappings = {
     flight: [
@@ -28,18 +28,43 @@ export function PlaceholderTags({ nextSlot, intent, onTagClick }) {
       { key: "to", label: "to destination" },
       { key: "date", label: "starting on" },
       { key: "nights", label: "for days" },
-      { key: "travelers", label: "for travelers" },
+      { key: "passengers", label: "for travelers" },
+      { key: "theme", label: "theme" },
+      { key: "budget", label: "budget" },
     ],
   };
 
   // Only show intent selection buttons when no intent is detected
   if (!intent) {
-    const intentOptions = [
-      { key: "flight", label: "Flights", insertText: "Book a flight" },
-      { key: "hotel", label: "Hotels", insertText: "Book a hotel" },
-      { key: "train", label: "Trains", insertText: "Book a train" },
-      { key: "holiday", label: "Holidays", insertText: "Book a holiday package" },
-    ];
+    // Get intent suggestions from API if available, otherwise use defaults
+    const intentSuggestions = suggestions
+      .filter(s => s.entity_type === 'intent' && s.selectable && !s.is_placeholder)
+      .map(s => s.text.toLowerCase());
+    
+    // Default intent options
+    const defaultIntents = ['flight', 'hotel', 'train', 'holiday'];
+    
+    // Use API suggestions if available, otherwise use defaults
+    const availableIntents = intentSuggestions.length > 0 ? intentSuggestions : defaultIntents;
+    
+    const intentConfig = {
+      flight: { label: "Flights", insertText: "Book a flight" },
+      hotel: { label: "Hotels", insertText: "Book a hotel" },
+      train: { label: "Trains", insertText: "Book a train" },
+      holiday: { label: "Holidays", insertText: "Book a holiday package" },
+    };
+    
+    const intentOptions = availableIntents
+      .filter(intent => intentConfig[intent])
+      .map(intent => ({
+        key: intent,
+        label: intentConfig[intent].label,
+        insertText: intentConfig[intent].insertText,
+      }));
+    
+    if (intentOptions.length === 0) {
+      return null;
+    }
     
     return (
       <div className="flex flex-wrap gap-2 mt-3 justify-center">

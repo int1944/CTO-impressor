@@ -23,7 +23,11 @@ app.add_middleware(
 )
 # Initialize components
 text_processor = TextProcessor()
-rule_engine = RuleEngine(enable_cache=True)
+# Disable cache to ensure fresh results (can re-enable in production for performance)
+rule_engine = RuleEngine(enable_cache=False)
+# Clear any existing cache on startup
+if rule_engine.cache:
+    rule_engine.cache.clear()
 suggestion_generator = SuggestionGenerator()
 llm_fallback = LLMFallbackService()
 
@@ -58,12 +62,24 @@ async def get_suggestions(request: SuggestionRequest):
     """
     start_time = time.time()
     
-    # Early return for empty queries to prevent unnecessary processing
+    # For empty queries, return intent suggestions
     if not request.query or not request.query.strip():
-        return SuggestionResponse(
-            suggestions=[],
+        # Create a partial match to suggest intents
+        from ..parser.rule_engine import RuleMatch
+        partial_match = RuleMatch(
             intent=None,
-            next_slot=None,
+            confidence=0.5,
+            entities={},
+            next_slot='intent',
+            match_text=None
+        )
+        suggestions = suggestion_generator.generate(partial_match, include_placeholder=True, query=request.query)
+        suggestions_dict = [s.to_dict() for s in suggestions]
+        
+        return SuggestionResponse(
+            suggestions=suggestions_dict,
+            intent=None,
+            next_slot='intent',
             source="empty_query",
             latency_ms=round((time.time() - start_time) * 1000, 2)
         )
@@ -108,6 +124,14 @@ async def get_suggestions(request: SuggestionRequest):
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+@app.post("/clear-cache")
+async def clear_cache():
+    """Clear the rule engine cache."""
+    if rule_engine.cache:
+        rule_engine.cache.clear()
+    return {"status": "cache_cleared", "message": "Rule engine cache cleared successfully"}
 
 
 if __name__ == "__main__":

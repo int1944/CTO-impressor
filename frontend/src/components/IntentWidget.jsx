@@ -32,6 +32,11 @@ export function IntentWidget({ suggestions, onIntentSelect }) {
       label: "Train",
       color: "bg-orange-100 border-orange-300 hover:bg-orange-200",
     },
+    holiday: {
+      icon: "🏖️",
+      label: "Holiday",
+      color: "bg-purple-100 border-purple-300 hover:bg-purple-200",
+    },
   };
 
   return (
@@ -40,7 +45,7 @@ export function IntentWidget({ suggestions, onIntentSelect }) {
         <h3 className="text-sm font-semibold text-gray-700 mb-3">
           What would you like to book?
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {intentSuggestions.map((intent, index) => {
             const config = intentConfig[intent.text.toLowerCase()] || {
               icon: "📋",

@@ -60,6 +60,8 @@ class SuggestionGenerator:
         'passengers': 'for how many passengers',
         'nights': 'for how many nights',
         'category': 'property class',
+        'theme': 'theme',
+        'budget': 'budget',
         'intent': None,  # No placeholder for intent
     }
     
@@ -90,6 +92,9 @@ class SuggestionGenerator:
         Returns:
             Placeholder text or None if no placeholder
         """
+        # For holidays, use "starting on" for date slot
+        if slot == 'date' and intent == 'holiday':
+            return 'starting on'
         return self.PLACEHOLDER_MAP.get(slot)
     
     def _load_cities(self) -> List[str]:
@@ -228,6 +233,10 @@ class SuggestionGenerator:
             entity_suggestions = self._get_category_suggestions()
         elif next_slot == 'quota':
             entity_suggestions = self._get_quota_suggestions()
+        elif next_slot == 'theme':
+            entity_suggestions = self._get_theme_suggestions()
+        elif next_slot == 'budget':
+            entity_suggestions = self._get_budget_suggestions()
         
         # Add entity suggestions (selectable)
         # Adjust max_suggestions to account for placeholder
@@ -249,7 +258,7 @@ class SuggestionGenerator:
     
     def _get_intent_suggestions(self) -> List[str]:
         """Get intent suggestions."""
-        return ['flight', 'hotel', 'train']
+        return ['flight', 'hotel', 'train', 'holiday']
     
     def _get_city_suggestions(self, exclude: Optional[str] = None, prefix: Optional[str] = None) -> List[str]:
         """
@@ -402,3 +411,11 @@ class SuggestionGenerator:
     def _get_category_suggestions(self) -> List[str]:
         """Get property class/category suggestions for hotels."""
         return ['budget', '3-star', '4-star', '5-star', 'luxury']
+    
+    def _get_theme_suggestions(self) -> List[str]:
+        """Get holiday theme suggestions."""
+        return ['honeymoon', 'adventure', 'beach', 'family', 'mountains', 'cultural', 'romantic', 'wildlife']
+    
+    def _get_budget_suggestions(self) -> List[str]:
+        """Get holiday budget suggestions."""
+        return ['budget', 'affordable', 'mid-range', 'luxury', 'premium']
