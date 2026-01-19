@@ -64,22 +64,22 @@ export function TravelInput({
               onCursorChange(e.target.selectionStart);
             }
           }}
-          className="w-full px-6 py-4 text-lg bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-peach-200 focus:border-peach-400 focus:outline-none glow-effect transition-all duration-200 text-gray-800 caret-peach-600 placeholder:text-gray-400"
+          className="w-full px-6 py-5 text-lg bg-white rounded-2xl border-0 focus:outline-none focus:ring-4 focus:ring-red-400/50 shadow-2xl transition-all duration-200 text-gray-800 placeholder:text-gray-400 font-medium"
           placeholder="Book a flight to..."
           style={{
-            caretColor: "#f16a22",
+            caretColor: "#dc2626",
           }}
         />
 
         {/* Submit button */}
         <button
           onClick={handleSubmit}
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-peach-500 hover:bg-peach-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl"
+          className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
           aria-label="Submit"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
+            className="h-6 w-6"
             viewBox="0 0 20 20"
             fill="currentColor"
           >

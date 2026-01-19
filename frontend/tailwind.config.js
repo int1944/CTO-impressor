@@ -19,10 +19,27 @@ export default {
           800: '#95321a',
           900: '#782c18',
         },
+        mmt: {
+          blue: '#008cff',
+          purple: '#764ba2',
+          indigo: '#667eea',
+          red: '#eb2026', // Official MakeMyTrip red
+          gray: '#4a4a4a', // Logo background gray
+        },
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(241, 106, 34, 0.3)',
-        'glow-lg': '0 0 30px rgba(241, 106, 34, 0.4)',
+        'glow': '0 0 30px rgba(255, 255, 255, 0.2)',
+        'glow-lg': '0 0 40px rgba(255, 255, 255, 0.3)',
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.5s ease-out',
+        'pulse': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
     },
   },

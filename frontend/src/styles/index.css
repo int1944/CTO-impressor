@@ -4,30 +4,71 @@
 
 @layer base {
   body {
-    @apply bg-peach-50 min-h-screen;
+    @apply min-h-screen;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
       "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
       "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: #2d2d2d;
+    position: relative;
+    overflow-x: hidden;
+  }
+  
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    z-index: -1;
+  }
+  
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, 
+      rgba(45, 45, 45, 0.75) 0%, 
+      rgba(45, 45, 45, 0.85) 50%,
+      rgba(45, 45, 45, 0.9) 100%);
+    z-index: -1;
   }
 }
 
 @layer components {
   .glow-effect {
-    box-shadow: 0 0 20px rgba(241, 106, 34, 0.3),
-      0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.2),
+      0 8px 16px rgba(0, 0, 0, 0.2);
   }
 
   .glow-effect-lg {
-    box-shadow: 0 0 30px rgba(241, 106, 34, 0.4),
-      0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 40px rgba(255, 255, 255, 0.3),
+      0 15px 30px rgba(0, 0, 0, 0.25);
   }
 
   .translucent-card {
-    @apply backdrop-blur-md bg-white/80;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    @apply backdrop-blur-xl bg-white/95;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
   }
 }
 
