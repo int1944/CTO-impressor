@@ -3,6 +3,8 @@
 import time
 from typing import List, Dict, Optional
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
 
 from ..parser.rule_engine import RuleEngine
@@ -12,7 +14,13 @@ from ..utils.text_processor import TextProcessor
 
 
 app = FastAPI(title="Suggestion API", version="1.0.0")
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify allowed origins like ["http://localhost:3000"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # Initialize components
 text_processor = TextProcessor()
 rule_engine = RuleEngine(enable_cache=True)

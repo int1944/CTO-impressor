@@ -51,8 +51,6 @@ class CityService:
             # Remove any rows with missing data
             self.cities_df = self.cities_df.dropna(subset=['name', 'population'])
             
-            # Sort by population descending for better suggestions
-            self.cities_df = self.cities_df.sort_values('population', ascending=False).reset_index(drop=True)
             
             # Create set for fast lookup
             self.cities_set = set(self.cities_df['name'].str.lower().values)
