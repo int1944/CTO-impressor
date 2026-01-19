@@ -1,11 +1,11 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://0.0.0.0:8001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://0.0.0.0:8001";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -16,16 +16,20 @@ const api = axios.create({
  * @param {object} context - Optional context object
  * @returns {Promise<object>} Suggestion response
  */
-export const getSuggestions = async (query, cursorPosition = null, context = {}) => {
+export const getSuggestions = async (
+  query,
+  cursorPosition = null,
+  context = {}
+) => {
   try {
-    const response = await api.post('/suggest', {
+    const response = await api.post("/suggest", {
       query,
       cursor_position: cursorPosition,
       context,
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching suggestions:', error);
+    console.error("Error fetching suggestions:", error);
     throw error;
   }
 };
