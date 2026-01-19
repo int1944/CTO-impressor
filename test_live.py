@@ -378,6 +378,15 @@ class LiveTyper:
                 # Tab - select first selectable suggestion (skip placeholder)
                 elif ord(char) == 9:
                     match = self.engine.match(self.query)
+                    
+                    # Fallback to LLM if rule engine doesn't return anything (only when user enters space)
+                    if not match and self.query and len(self.query.strip()) > 0 and self.query.endswith(' '):
+                        try:
+                            match = asyncio.run(self.llm_fallback.get_next_slot(self.query))
+                        except Exception as e:
+                            print(f"LLM fallback error: {e}")
+                            match = None
+                    
                     if match and match.next_slot:
                         suggestions = self.generator.generate(match, max_suggestions=8, include_placeholder=True, query=self.query)
                         # Find first selectable suggestion (skip placeholder)
