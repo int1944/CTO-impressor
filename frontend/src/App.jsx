@@ -421,8 +421,20 @@ function App() {
            </div>
         </div>
 
-        {/* Suggestion Box (Floating) */}
-        {suggestions.length > 0 && (
+        {/* Suggestion Box (Floating) - Only show when no specialized widget is active */}
+        {suggestions.length > 0 && 
+         !showIntentWidget && 
+         !showCalendar && 
+         !showCityWidget && 
+         !showTimeWidget && 
+         !showClassWidget && 
+         !showPassengersWidget && 
+         !showGuestsWidget && 
+         !showNightsWidget && 
+         !showRoomsWidget && 
+         !showCategoryWidget && 
+         !showQuotaWidget && 
+         !showAirlineWidget && (
           <div className="flex justify-center animate-fade-in">
             <SuggestionBox
               suggestions={suggestions}

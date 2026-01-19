@@ -1,14 +1,14 @@
 export function SuggestionBox({ suggestions, onSuggestionClick, loading }) {
-  if (loading) {
-    return (
-      <div className="translucent-card rounded-2xl p-4 shadow-lg glow-effect max-w-md">
-        <div className="flex items-center space-x-2 text-peach-600">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-peach-300 border-t-peach-600"></div>
-          <span className="text-sm">Loading suggestions...</span>
-        </div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="translucent-card rounded-2xl p-4 shadow-lg glow-effect max-w-md">
+  //       <div className="flex items-center space-x-2 text-red-600">
+  //         <div className="animate-spin rounded-full h-4 w-4 border-2 border-red-300 border-t-red-600"></div>
+  //         <span className="text-sm">Loading suggestions...</span>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   if (!suggestions || suggestions.length === 0) {
     return null;
