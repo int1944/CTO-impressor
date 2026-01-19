@@ -27,9 +27,9 @@ def extract_present_entities(query: str) -> Tuple[Set[str], str]:
         # Check for destination city
         if re.search(r"to\s+(\w+)", query_lower):
             present.add("destination")
-        # Check for date
+        # Check for date - IMPROVED to match formats like "Mon, Jan 19", "tomorrow", "next Friday"
         if re.search(
-            r"(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|tomorrow|this\s+\w+)|(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec))",
+            r"(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|mon|tue|wed|thu|fri|sat|sun|tomorrow|this\s+\w+)|(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|on\s+(mon|tue|wed|thu|fri|sat|sun)[,.]?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)[,.]?\s+\d+|\btomorrow\b|next\s+(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|month))",
             query_lower,
         ):
             present.add("date")
@@ -51,9 +51,9 @@ def extract_present_entities(query: str) -> Tuple[Set[str], str]:
         # Check for location
         if re.search(r"in\s+(\w+)", query_lower):
             present.add("location")
-        # Check for check-in date
+        # Check for check-in date - IMPROVED to match formats like "Mon, Jan 19", "tomorrow", "next week"
         if re.search(
-            r"(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|tomorrow|this\s+\w+)|check[-\s]?in\s+on|arriving\s+on)",
+            r"(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|mon|tue|wed|thu|fri|sat|sun|tomorrow|this\s+\w+)|(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|on\s+(mon|tue|wed|thu|fri|sat|sun)[,.]?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)[,.]?\s+\d+|\btomorrow\b|next\s+(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|month)|check[-\s]?in\s+on|arriving\s+on|from\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december))",
             query_lower,
         ):
             present.add("check-in")
@@ -78,9 +78,9 @@ def extract_present_entities(query: str) -> Tuple[Set[str], str]:
         # Check for destination
         if re.search(r"to\s+(\w+)", query_lower):
             present.add("destination")
-        # Check for date
+        # Check for date - IMPROVED to match formats like "Mon, Jan 19", "tomorrow", "next Friday"
         if re.search(
-            r"(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|tomorrow|this\s+\w+))",
+            r"(on\s+(\d+|january|february|march|april|may|june|july|august|september|october|november|december|sunday|monday|tuesday|wednesday|thursday|friday|saturday|mon|tue|wed|thu|fri|sat|sun|tomorrow|this\s+\w+)|(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|on\s+(mon|tue|wed|thu|fri|sat|sun)[,.]?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december)[,.]?\s+\d+|\btomorrow\b|next\s+(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday|month))",
             query_lower,
         ):
             present.add("date")
