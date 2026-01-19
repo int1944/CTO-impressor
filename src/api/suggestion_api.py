@@ -58,6 +58,16 @@ async def get_suggestions(request: SuggestionRequest):
     """
     start_time = time.time()
     
+    # Early return for empty queries to prevent unnecessary processing
+    if not request.query or not request.query.strip():
+        return SuggestionResponse(
+            suggestions=[],
+            intent=None,
+            next_slot=None,
+            source="empty_query",
+            latency_ms=round((time.time() - start_time) * 1000, 2)
+        )
+    
     # Preprocess query
     processed_query = text_processor.normalize(request.query)
     

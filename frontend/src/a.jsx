@@ -19,6 +19,8 @@ function App() {
   const [query, setQuery] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [selectedDate, setSelectedDate] = useState(null);
+
+  // Memoize context object to prevent unnecessary re-renders
   const context = useMemo(() => ({}), []);
 
   const { suggestions, loading, intent, nextSlot, source, latency } =
@@ -78,7 +80,6 @@ function App() {
       }
     } else {
       // Check if query ends with the keyword (with space, without space, or as last word)
-      // This handles cases like "flight from" -> don't add "from" again
       if (lastWord === placeholderFirst || 
           queryLower.endsWith(' ' + placeholderFirst) || 
           queryLower.endsWith(placeholderFirst)) {
@@ -423,20 +424,8 @@ function App() {
            </div>
         </div>
 
-        {/* Suggestion Box (Floating) - Only show when no specialized widget is active */}
-        {suggestions.length > 0 && 
-         !showIntentWidget && 
-         !showCalendar && 
-         !showCityWidget && 
-         !showTimeWidget && 
-         !showClassWidget && 
-         !showPassengersWidget && 
-         !showGuestsWidget && 
-         !showNightsWidget && 
-         !showRoomsWidget && 
-         !showCategoryWidget && 
-         !showQuotaWidget && 
-         !showAirlineWidget && (
+        {/* Suggestion Box (Floating) */}
+        {suggestions.length > 0 && (
           <div className="flex justify-center animate-fade-in">
             <SuggestionBox
               suggestions={suggestions}

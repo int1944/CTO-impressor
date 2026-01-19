@@ -15,22 +15,33 @@ const api = axios.create({
  * @param {string} query - The user's query text
  * @param {number} cursorPosition - Optional cursor position
  * @param {object} context - Optional context object
+ * @param {AbortSignal} signal - Optional abort signal for request cancellation
  * @returns {Promise<object>} Suggestion response
  */
 export const getSuggestions = async (
   query,
   cursorPosition = null,
-  context = {}
+  context = {},
+  signal = null
 ) => {
   try {
-    const response = await api.post("/suggest", {
-      query,
-      cursor_position: cursorPosition,
-      context,
-    });
+    const response = await api.post(
+      "/suggest",
+      {
+        query,
+        cursor_position: cursorPosition,
+        context,
+      },
+      {
+        signal, // Pass abort signal to axios
+      }
+    );
     return response.data;
   } catch (error) {
-    console.error("Error fetching suggestions:", error);
+    // Don't log abort errors as they're expected
+    if (error.name !== 'CanceledError' && error.code !== 'ERR_CANCELED') {
+      console.error("Error fetching suggestions:", error);
+    }
     throw error;
   }
 };
