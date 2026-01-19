@@ -1,15 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo } from "react";
 
 export function CityListWidget({ suggestions, onCitySelect, entityType }) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Filter city suggestions
   const citySuggestions = useMemo(() => {
     return suggestions.filter(
-      (s) => 
-        !s.is_placeholder && 
-        s.selectable && 
-        (s.entity_type === 'to' || s.entity_type === 'from' || s.entity_type === 'city')
+      (s) =>
+        !s.is_placeholder &&
+        s.selectable &&
+        (s.entity_type === "to" ||
+          s.entity_type === "from" ||
+          s.entity_type === "city")
     );
   }, [suggestions]);
 

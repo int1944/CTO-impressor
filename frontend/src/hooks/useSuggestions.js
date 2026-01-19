@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getSuggestions } from '../services/api';
-import { useDebounce } from './useDebounce';
+import { useState, useEffect, useCallback } from "react";
+import { getSuggestions } from "../services/api";
+import { useDebounce } from "./useDebounce";
 
 /**
  * Custom hook for fetching suggestions with debouncing
@@ -31,15 +31,19 @@ export function useSuggestions(query, cursorPosition = null, context = {}) {
     setError(null);
 
     try {
-      const response = await getSuggestions(debouncedQuery, cursorPosition, context);
-      
+      const response = await getSuggestions(
+        debouncedQuery,
+        cursorPosition,
+        context
+      );
+
       setSuggestions(response.suggestions || []);
       setIntent(response.intent || null);
       setNextSlot(response.next_slot || null);
       setSource(response.source || null);
       setLatency(response.latency_ms || 0);
     } catch (err) {
-      setError(err.message || 'Failed to fetch suggestions');
+      setError(err.message || "Failed to fetch suggestions");
       setSuggestions([]);
     } finally {
       setLoading(false);

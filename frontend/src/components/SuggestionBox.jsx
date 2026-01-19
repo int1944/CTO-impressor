@@ -15,8 +15,10 @@ export function SuggestionBox({ suggestions, onSuggestionClick, loading }) {
   }
 
   // Separate placeholders from selectable suggestions
-  const placeholders = suggestions.filter(s => s.is_placeholder);
-  const selectable = suggestions.filter(s => !s.is_placeholder && s.selectable);
+  const placeholders = suggestions.filter((s) => s.is_placeholder);
+  const selectable = suggestions.filter(
+    (s) => !s.is_placeholder && s.selectable
+  );
 
   return (
     <div className="translucent-card rounded-2xl p-4 shadow-lg glow-effect max-w-md animate-fade-in">

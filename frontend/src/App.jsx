@@ -1,22 +1,19 @@
-import { useState } from 'react';
-import { TravelInput } from './components/TravelInput';
-import { SuggestionBox } from './components/SuggestionBox';
-import { PlaceholderTags } from './components/PlaceholderTags';
-import { CalendarWidget } from './components/CalendarWidget';
-import { CityListWidget } from './components/CityListWidget';
-import { useSuggestions } from './hooks/useSuggestions';
-import { insertEntity } from './utils/queryBuilder';
+import { useState } from "react";
+import { TravelInput } from "./components/TravelInput";
+import { SuggestionBox } from "./components/SuggestionBox";
+import { PlaceholderTags } from "./components/PlaceholderTags";
+import { CalendarWidget } from "./components/CalendarWidget";
+import { CityListWidget } from "./components/CityListWidget";
+import { useSuggestions } from "./hooks/useSuggestions";
+import { insertEntity } from "./utils/queryBuilder";
 
 function App() {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [selectedDate, setSelectedDate] = useState(null);
 
-  const { suggestions, loading, intent, nextSlot, source, latency } = useSuggestions(
-    query,
-    cursorPosition,
-    {}
-  );
+  const { suggestions, loading, intent, nextSlot, source, latency } =
+    useSuggestions(query, cursorPosition, {});
 
   const handleQueryChange = (newQuery) => {
     setQuery(newQuery);
@@ -25,41 +22,52 @@ function App() {
   const handleSuggestionClick = (suggestion) => {
     if (!suggestion.selectable || suggestion.is_placeholder) return;
 
-    const newQuery = insertEntity(query, suggestion.text, suggestion.entity_type);
+    const newQuery = insertEntity(
+      query,
+      suggestion.text,
+      suggestion.entity_type
+    );
     setQuery(newQuery);
-    
+
     // Focus back on input (will be handled by TravelInput)
   };
 
   const handleDateSelect = (date) => {
     setSelectedDate(date);
-    const dateStr = date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
+    const dateStr = date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
     });
-    const newQuery = insertEntity(query, dateStr, 'date');
+    const newQuery = insertEntity(query, dateStr, "date");
     setQuery(newQuery);
   };
 
   const handleTagClick = (slotKey) => {
     // This could trigger a specific widget or add placeholder text
-    console.log('Tag clicked:', slotKey);
+    console.log("Tag clicked:", slotKey);
   };
 
   const handleSubmit = (finalQuery) => {
-    console.log('Submitting query:', finalQuery);
+    console.log("Submitting query:", finalQuery);
     // Handle submission (e.g., navigate to results page)
     alert(`Query submitted: ${finalQuery}`);
   };
 
   // Determine which widget to show
-  const showCalendar = nextSlot === 'date' || nextSlot === 'checkin' || nextSlot === 'checkout';
-  const showCityWidget = 
-    nextSlot === 'to' || 
-    nextSlot === 'from' || 
-    nextSlot === 'city' ||
-    suggestions.some(s => (s.entity_type === 'to' || s.entity_type === 'from' || s.entity_type === 'city') && !s.is_placeholder);
+  const showCalendar =
+    nextSlot === "date" || nextSlot === "checkin" || nextSlot === "checkout";
+  const showCityWidget =
+    nextSlot === "to" ||
+    nextSlot === "from" ||
+    nextSlot === "city" ||
+    suggestions.some(
+      (s) =>
+        (s.entity_type === "to" ||
+          s.entity_type === "from" ||
+          s.entity_type === "city") &&
+        !s.is_placeholder
+    );
 
   return (
     <div className="min-h-screen bg-peach-50 flex flex-col items-center justify-center p-4">
@@ -127,11 +135,11 @@ function App() {
         </div>
 
         {/* Debug Info (can be removed in production) */}
-        {process.env.NODE_ENV === 'development' && (
+        {process.env.NODE_ENV === "development" && (
           <div className="mt-8 p-4 bg-white/60 rounded-xl text-xs text-gray-600">
-            <div>Intent: {intent || 'None'}</div>
-            <div>Next Slot: {nextSlot || 'None'}</div>
-            <div>Source: {source || 'None'}</div>
+            <div>Intent: {intent || "None"}</div>
+            <div>Next Slot: {nextSlot || "None"}</div>
+            <div>Source: {source || "None"}</div>
             <div>Latency: {latency}ms</div>
             <div>Suggestions: {suggestions.length}</div>
           </div>

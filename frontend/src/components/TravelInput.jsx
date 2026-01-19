@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 
-export function TravelInput({ 
-  query, 
-  onQueryChange, 
-  onSuggestionSelect, 
+export function TravelInput({
+  query,
+  onQueryChange,
+  onSuggestionSelect,
   onSubmit,
   cursorPosition,
-  onCursorChange 
+  onCursorChange,
 }) {
   const [localQuery, setLocalQuery] = useState(query);
   const inputRef = useRef(null);
@@ -19,7 +19,7 @@ export function TravelInput({
     const newQuery = e.target.value;
     setLocalQuery(newQuery);
     onQueryChange(newQuery);
-    
+
     // Update cursor position
     if (onCursorChange) {
       onCursorChange(e.target.selectionStart);
@@ -28,13 +28,13 @@ export function TravelInput({
 
   const handleKeyDown = (e) => {
     // Tab to select first suggestion
-    if (e.key === 'Tab' && onSuggestionSelect) {
+    if (e.key === "Tab" && onSuggestionSelect) {
       e.preventDefault();
       // This will be handled by parent component
     }
-    
+
     // Enter to submit
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (onSubmit) {
         onSubmit(localQuery);
@@ -67,7 +67,7 @@ export function TravelInput({
           className="w-full px-6 py-4 text-lg bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-peach-200 focus:border-peach-400 focus:outline-none glow-effect transition-all duration-200 text-gray-800 caret-peach-600 placeholder:text-gray-400"
           placeholder="Book a flight to..."
           style={{
-            caretColor: '#f16a22',
+            caretColor: "#f16a22",
           }}
         />
 

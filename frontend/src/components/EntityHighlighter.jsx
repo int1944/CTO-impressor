@@ -1,4 +1,4 @@
-import { parseEntities } from '../utils/entityParser';
+import { parseEntities } from "../utils/entityParser";
 
 /**
  * Component to render text with highlighted entities
@@ -9,7 +9,7 @@ export function EntityHighlighter({ text }) {
   if (!text) return null;
 
   const entities = parseEntities(text);
-  
+
   if (entities.length === 0) {
     return <span>{text}</span>;
   }
@@ -29,10 +29,7 @@ export function EntityHighlighter({ text }) {
 
     // Add highlighted entity
     parts.push(
-      <span
-        key={`entity-${index}`}
-        className="font-bold text-peach-600"
-      >
+      <span key={`entity-${index}`} className="font-bold text-peach-600">
         {text.substring(entity.start, entity.end)}
       </span>
     );
@@ -42,11 +39,7 @@ export function EntityHighlighter({ text }) {
 
   // Add remaining text
   if (lastIndex < text.length) {
-    parts.push(
-      <span key="text-end">
-        {text.substring(lastIndex)}
-      </span>
-    );
+    parts.push(<span key="text-end">{text.substring(lastIndex)}</span>);
   }
 
   return <>{parts}</>;

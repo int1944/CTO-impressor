@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export function CalendarWidget({ onDateSelect, selectedDate }) {
   const [showCalendar, setShowCalendar] = useState(false);
 
   const quickOptions = [
-    { label: 'Today', value: 'today' },
-    { label: 'Tomorrow', value: 'tomorrow' },
-    { label: 'This Weekend', value: 'weekend' },
-    { label: 'Next Week', value: 'nextweek' },
+    { label: "Today", value: "today" },
+    { label: "Tomorrow", value: "tomorrow" },
+    { label: "This Weekend", value: "weekend" },
+    { label: "Next Week", value: "nextweek" },
   ];
 
   const handleQuickSelect = (option) => {
@@ -17,20 +17,20 @@ export function CalendarWidget({ onDateSelect, selectedDate }) {
     let date;
 
     switch (option) {
-      case 'today':
+      case "today":
         date = today;
         break;
-      case 'tomorrow':
+      case "tomorrow":
         date = new Date(today);
         date.setDate(date.getDate() + 1);
         break;
-      case 'weekend':
+      case "weekend":
         date = new Date(today);
         const dayOfWeek = date.getDay();
         const daysUntilSaturday = 6 - dayOfWeek;
         date.setDate(date.getDate() + daysUntilSaturday);
         break;
-      case 'nextweek':
+      case "nextweek":
         date = new Date(today);
         date.setDate(date.getDate() + 7);
         break;
@@ -45,11 +45,11 @@ export function CalendarWidget({ onDateSelect, selectedDate }) {
   };
 
   const formatDate = (date) => {
-    if (!date) return '';
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
+    if (!date) return "";
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -75,7 +75,7 @@ export function CalendarWidget({ onDateSelect, selectedDate }) {
             onClick={() => setShowCalendar(!showCalendar)}
             className="w-full px-4 py-2 rounded-xl bg-white/60 hover:bg-white/80 border border-peach-200 text-left text-sm font-medium text-gray-800"
           >
-            {selectedDate ? formatDate(selectedDate) : 'Select date'}
+            {selectedDate ? formatDate(selectedDate) : "Select date"}
           </button>
 
           {showCalendar && (
