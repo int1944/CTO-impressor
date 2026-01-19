@@ -27,6 +27,86 @@ function App() {
     setQuery(newQuery);
   };
 
+  // Helper to get placeholder text from suggestions
+  const getPlaceholderText = () => {
+    if (suggestions && suggestions.length > 0 && suggestions[0].is_placeholder) {
+      return suggestions[0].text;
+    }
+    return null;
+  };
+
+  // Format suggestion with placeholder keyword (like test_live.py)
+  const formatSuggestionWithPlaceholder = (suggestionText, placeholderText, currentQuery) => {
+    if (!placeholderText) {
+      return suggestionText;
+    }
+
+    const placeholderWords = placeholderText.trim().split(/\s+/);
+    const placeholderFirst = placeholderWords[0]?.toLowerCase();
+    const prefixCandidates = new Set(['from', 'to', 'on', 'at', 'in', 'with', 'for', 'check-in', 'check-out']);
+    
+    if (!placeholderFirst || !prefixCandidates.has(placeholderFirst)) {
+      return suggestionText;
+    }
+
+    const suggestionLower = suggestionText.toLowerCase().trim();
+    
+    // If suggestion already starts with the keyword, don't add it again
+    if (suggestionLower.startsWith(placeholderFirst + ' ')) {
+      return suggestionText;
+    }
+
+    const queryLower = currentQuery.toLowerCase().trim();
+    const queryWords = queryLower.split(/\s+/);
+    const lastWord = queryWords[queryWords.length - 1] || "";
+
+    // If user already typed a different slot keyword, don't force the placeholder keyword
+    if (prefixCandidates.has(lastWord) && lastWord !== placeholderFirst) {
+      return suggestionText;
+    }
+
+    // Check if query already ends with the placeholder keyword (with or without space)
+    // For "check-in" and "check-out", handle both with and without hyphen
+    if (placeholderFirst === 'check-in' || placeholderFirst === 'check-out') {
+      const baseWord = placeholderFirst.replace('-', '');
+      // Check if query ends with the keyword (with space, without space, or as last word)
+      if (lastWord === placeholderFirst || lastWord === baseWord || 
+          queryLower.endsWith(' ' + placeholderFirst) || queryLower.endsWith(' ' + baseWord) ||
+          queryLower.endsWith(placeholderFirst) || queryLower.endsWith(baseWord)) {
+        return suggestionText; // Don't add keyword, user already typed it
+      }
+    } else {
+      // Check if query ends with the keyword (with space, without space, or as last word)
+      if (lastWord === placeholderFirst || 
+          queryLower.endsWith(' ' + placeholderFirst) || 
+          queryLower.endsWith(placeholderFirst)) {
+        return suggestionText; // Don't add keyword, user already typed it
+      }
+    }
+
+    // Add the keyword prefix
+    return `${placeholderFirst} ${suggestionText}`;
+  };
+
+  // Format nights selection (like test_live.py)
+  const formatNightsSelection = (suggestionText, placeholderText) => {
+    if (!placeholderText || !placeholderText.toLowerCase().includes('night')) {
+      return suggestionText;
+    }
+
+    // If it's already formatted (contains "night" or "nights"), return as-is
+    if (suggestionText.toLowerCase().includes('night')) {
+      return suggestionText;
+    }
+
+    // If it's just a number, format it
+    if (/^\d+$/.test(suggestionText)) {
+      return suggestionText === "1" ? `${suggestionText} night` : `${suggestionText} nights`;
+    }
+
+    return suggestionText;
+  };
+
   const handleSuggestionClick = (suggestion) => {
     if (!suggestion.selectable || suggestion.is_placeholder) return;
 
@@ -49,9 +129,23 @@ function App() {
       return;
     }
 
+    // Get placeholder text to format suggestion
+    const placeholderText = getPlaceholderText();
+    
+    // Format suggestion with placeholder keyword (like terminal version)
+    let formattedText = formatSuggestionWithPlaceholder(
+      suggestion.text,
+      placeholderText,
+      query
+    );
+    
+    // Format nights selection
+    formattedText = formatNightsSelection(formattedText, placeholderText);
+
+    // Insert entity with formatted text
     const newQuery = insertEntity(
       query,
-      suggestion.text,
+      formattedText,
       suggestion.entity_type
     );
     setQuery(newQuery);
@@ -66,7 +160,16 @@ function App() {
       month: "short",
       day: "numeric",
     });
-    const newQuery = insertEntity(query, dateStr, "date");
+    // Use the correct entity type based on nextSlot
+    const entityType =
+      nextSlot === "checkin"
+        ? "checkin"
+        : nextSlot === "checkout"
+        ? "checkout"
+        : nextSlot === "return"
+        ? "return"
+        : "date";
+    const newQuery = insertEntity(query, dateStr, entityType);
     setQuery(newQuery);
   };
 

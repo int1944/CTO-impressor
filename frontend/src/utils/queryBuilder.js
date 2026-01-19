@@ -59,6 +59,7 @@ export function replaceEntity(query, oldEntity, newEntity) {
  */
 export function insertEntity(query, entity, entityType) {
   const queryLower = query.toLowerCase();
+  const entityLower = entity.toLowerCase().trim();
 
   // Handle different entity types
   switch (entityType) {
@@ -121,7 +122,155 @@ export function insertEntity(query, entity, entityType) {
       }
       // Insert "on" if not present
       if (!queryLower.includes(" on ")) {
-        return query + ` on ${entity}`;
+        return query + (query.endsWith(" ") ? "" : " ") + `on ${entity}`;
+      }
+      break;
+
+    case "city":
+      // For hotels: use "in" keyword
+      // If entity already starts with "in", use it as-is
+      if (entityLower.startsWith("in ")) {
+        // Check if "in" already exists in query (with spaces or at end)
+        if (queryLower.includes(" in ") || queryLower.endsWith(" in") || queryLower.endsWith("in")) {
+          const inMatch = query.match(
+            /\bin\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|check-in|check-out|$))/i
+          );
+          if (inMatch) {
+            return query.replace(inMatch[0], entity);
+          }
+          // If "in" is at the end without a city, just append the entity (which has "in")
+          if (queryLower.endsWith(" in") || queryLower.endsWith("in")) {
+            return query.trim() + " " + entity.trim();
+          }
+        }
+        // Just append the entity (it already has "in")
+        return query + (query.endsWith(" ") ? "" : " ") + entity;
+      }
+      
+      // Check if "in" keyword exists (with spaces or at end)
+      if (queryLower.includes(" in ") || queryLower.endsWith(" in") || queryLower.endsWith("in")) {
+        // If "in" is at the end, just append the city
+        if (queryLower.endsWith(" in") || queryLower.endsWith("in")) {
+          return query.trim() + " " + entity;
+        }
+        // If "in" has a city after it, replace that city
+        const inMatch = query.match(
+          /\bin\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|check-in|check-out|$))/i
+        );
+        if (inMatch) {
+          return query.replace(inMatch[0], `in ${entity}`);
+        }
+      }
+      // Insert "in" if not present
+      if (!queryLower.includes(" in ") && !queryLower.endsWith(" in") && !queryLower.endsWith("in")) {
+        // Find intent word position (hotel)
+        const intentMatch = query.match(/\bhotel\b/i);
+        if (intentMatch) {
+          const pos = intentMatch.index + intentMatch[0].length;
+          return (
+            query.substring(0, pos) + ` in ${entity}` + query.substring(pos)
+          );
+        }
+        // Fallback: just append
+        return query + (query.endsWith(" ") ? "" : " ") + `in ${entity}`;
+      }
+      break;
+
+    case "checkin":
+      // For hotels: use "check-in" keyword
+      // If entity already starts with "check-in", use it as-is (entityLower already defined above)
+      if (entityLower.startsWith("check-in ") || entityLower.startsWith("checkin ")) {
+        // Check if "check-in" already exists in query (with spaces or at end)
+        const hasCheckin = queryLower.includes(" check-in ") || queryLower.includes(" checkin ") ||
+                          queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
+                          queryLower.endsWith("check-in") || queryLower.endsWith("checkin");
+        if (hasCheckin) {
+          const checkinMatch = query.match(
+            /\b(check-in|checkin)\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|check-out|$))/i
+          );
+          if (checkinMatch) {
+            return query.replace(checkinMatch[0], entity);
+          }
+          // If "check-in" is at the end without a date, just append the entity (which has "check-in")
+          if (queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
+              queryLower.endsWith("check-in") || queryLower.endsWith("checkin")) {
+            return query.trim() + " " + entity.trim();
+          }
+        }
+        // Just append the entity (it already has "check-in")
+        return query + (query.endsWith(" ") ? "" : " ") + entity;
+      }
+      
+      // Check if "check-in" keyword exists (with spaces or at end)
+      const hasCheckin = queryLower.includes(" check-in ") || queryLower.includes(" checkin ") ||
+                        queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
+                        queryLower.endsWith("check-in") || queryLower.endsWith("checkin");
+      if (hasCheckin) {
+        // If "check-in" is at the end, just append the date
+        if (queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
+            queryLower.endsWith("check-in") || queryLower.endsWith("checkin")) {
+          return query.trim() + " " + entity;
+        }
+        // If "check-in" has a date after it, replace that date
+        const checkinMatch = query.match(
+          /\b(check-in|checkin)\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|check-out|$))/i
+        );
+        if (checkinMatch) {
+          return query.replace(checkinMatch[0], `check-in ${entity}`);
+        }
+      }
+      // Insert "check-in" if not present
+      if (!hasCheckin) {
+        return query + (query.endsWith(" ") ? "" : " ") + `check-in ${entity}`;
+      }
+      break;
+
+    case "checkout":
+      // For hotels: use "check-out" keyword
+      // If entity already starts with "check-out", use it as-is (entityLower already defined above)
+      if (entityLower.startsWith("check-out ") || entityLower.startsWith("checkout ")) {
+        // Check if "check-out" already exists in query (with spaces or at end)
+        const hasCheckout = queryLower.includes(" check-out ") || queryLower.includes(" checkout ") ||
+                           queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
+                           queryLower.endsWith("check-out") || queryLower.endsWith("checkout");
+        if (hasCheckout) {
+          const checkoutMatch = query.match(
+            /\b(check-out|checkout)\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|$))/i
+          );
+          if (checkoutMatch) {
+            return query.replace(checkoutMatch[0], entity);
+          }
+          // If "check-out" is at the end without a date, just append the entity (which has "check-out")
+          if (queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
+              queryLower.endsWith("check-out") || queryLower.endsWith("checkout")) {
+            return query.trim() + " " + entity.trim();
+          }
+        }
+        // Just append the entity (it already has "check-out")
+        return query + (query.endsWith(" ") ? "" : " ") + entity;
+      }
+      
+      // Check if "check-out" keyword exists (with spaces or at end)
+      const hasCheckout = queryLower.includes(" check-out ") || queryLower.includes(" checkout ") ||
+                         queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
+                         queryLower.endsWith("check-out") || queryLower.endsWith("checkout");
+      if (hasCheckout) {
+        // If "check-out" is at the end, just append the date
+        if (queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
+            queryLower.endsWith("check-out") || queryLower.endsWith("checkout")) {
+          return query.trim() + " " + entity;
+        }
+        // If "check-out" has a date after it, replace that date
+        const checkoutMatch = query.match(
+          /\b(check-out|checkout)\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|$))/i
+        );
+        if (checkoutMatch) {
+          return query.replace(checkoutMatch[0], `check-out ${entity}`);
+        }
+      }
+      // Insert "check-out" if not present
+      if (!hasCheckout) {
+        return query + (query.endsWith(" ") ? "" : " ") + `check-out ${entity}`;
       }
       break;
 
