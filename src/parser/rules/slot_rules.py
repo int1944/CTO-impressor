@@ -68,6 +68,21 @@ class SlotRules:
         
         slot_order = self.SLOT_ORDER[intent]
         filled_slots = self._identify_filled_slots(query, intent, entities)
+        query_lower = query.lower().strip()
+
+        # === HOTEL GUARDRAIL: check-in + check-out = no nights needed ===
+        if intent == 'hotel':
+            has_checkin = bool(re.search(r'\bcheck[-\s]?in\b', query_lower))
+            has_checkout = bool(re.search(r'\bcheck[-\s]?out\b', query_lower))
+            has_nights = bool(re.search(r'\b\d+\s*nights?\b', query_lower))
+            
+            # Rule 1: check-in + check-out → nights is filled
+            if has_checkin and has_checkout:
+                filled_slots.add('nights')
+            
+            # Rule 2: check-in + nights → checkout is filled
+            if has_checkin and has_nights:
+                filled_slots.add('checkout')
 
         # If user explicitly typed a slot keyword last, honor it (order-free)
         # BUT only if that slot is not already filled
@@ -78,7 +93,6 @@ class SlotRules:
         # Special handling for incomplete "for" keyword
         # "flight for" -> suggest passengers (for flights/trains)
         # "hotel for" -> suggest nights or guests (for hotels)
-        query_lower = query.lower().strip()
         if query_lower.endswith(' for') or query_lower.endswith('for'):
             if intent in ['flight', 'train']:
                 if 'passengers' not in filled_slots:
@@ -102,7 +116,6 @@ class SlotRules:
         
         # Flexible ordering: Check for any explicitly mentioned but unfilled slots first
         # This allows users to mention slots in any order
-        query_lower = query.lower()
         
         # Check for explicitly mentioned slots that aren't filled yet
         # Priority: slots mentioned later in query (user is actively typing them)
@@ -404,6 +417,25 @@ class SlotRules:
             # Check for room type slot
             if entities.get('room_types') or self._has_slot_keyword(query_lower, 'room_type'):
                 filled_slots.add('room_type')
+            
+            # === Hotel mutual exclusion rules ===
+            # Detect check-in/check-out more robustly (handles "check-in", "checkin", "check in")
+            has_checkin_keyword = bool(re.search(r'\bcheck[-\s]?in\b', query_lower))
+            has_checkout_keyword = bool(re.search(r'\bcheck[-\s]?out\b', query_lower))
+            has_nights_value = 'nights' in filled_slots or bool(re.search(r'\b\d+\s*nights?\b', query_lower))
+            
+            # Rule 1: If check-in + check-out are present → don't ask for nights
+            if has_checkin_keyword and has_checkout_keyword:
+                filled_slots.add('checkin')
+                filled_slots.add('checkout')
+                filled_slots.add('nights')  # Nights is implicitly known
+            
+            # Rule 2: If check-in + nights are present → don't ask for check-out
+            if has_checkin_keyword and has_nights_value:
+                filled_slots.add('checkin')
+                filled_slots.add('nights')
+                filled_slots.add('checkout')  # Checkout is implicitly known
+                
         elif intent == 'train':
             if self._has_slot_keyword(query_lower, 'quota'):
                 filled_slots.add('quota')
