@@ -356,6 +356,102 @@ export function insertEntity(query, entity, entityType) {
         return trimmedQuery ? `${trimmedQuery} ${entity}` : entity;
       }
 
+    case "passengers":
+      // For passengers, append the number and add "passenger"/"passengers" if not already present
+      const entityLowerPassengers = entity.toLowerCase().trim();
+      
+      // Check if "passengers" or "passenger" already exists in the query
+      const hasPassengers = /\b(passengers?|travelers?|people|adults?)\b/.test(queryLower);
+      
+      // Check if query ends with "for [number]" pattern (without passengers word)
+      const forNumberMatch = queryLower.match(/\bfor\s+(\d+)\s*$/);
+      
+      // If query ends with "for [number]" and entity is a number, replace the number
+      if (forNumberMatch && /^\d+$/.test(entity.trim()) && !hasPassengers) {
+        const num = entity.trim();
+        const passengerWord = num === "1" ? "passenger" : "passengers";
+        // Replace the number after "for" with the new number + passengers
+        return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${passengerWord}`);
+      }
+      
+      // If entity is just a number and "passengers" is not already in query, add it
+      if (/^\d+$/.test(entity.trim()) && !hasPassengers) {
+        const num = entity.trim();
+        return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "passenger" : "passengers"}`;
+      }
+      
+      // If entity already includes "passengers" or similar, use as-is
+      if (/\b(passengers?|travelers?|people|adults?)\b/.test(entityLowerPassengers)) {
+        return query + (query.endsWith(" ") ? "" : " ") + entity;
+      }
+      
+      // Otherwise, just append (entity might already be formatted)
+      return query + (query.endsWith(" ") ? "" : " ") + entity;
+
+    case "guests":
+      // For guests, append the number and add "guest"/"guests" if not already present
+      const entityLowerGuests = entity.toLowerCase().trim();
+      
+      // Check if "guests" or "guest" already exists in the query
+      const hasGuests = /\b(guests?|people)\b/.test(queryLower);
+      
+      // Check if query ends with "for [number]" pattern (without guests word)
+      const forNumberMatchGuests = queryLower.match(/\bfor\s+(\d+)\s*$/);
+      
+      // If query ends with "for [number]" and entity is a number, replace the number
+      if (forNumberMatchGuests && /^\d+$/.test(entity.trim()) && !hasGuests) {
+        const num = entity.trim();
+        const guestWord = num === "1" ? "guest" : "guests";
+        // Replace the number after "for" with the new number + guests
+        return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${guestWord}`);
+      }
+      
+      // If entity is just a number and "guests" is not already in query, add it
+      if (/^\d+$/.test(entity.trim()) && !hasGuests) {
+        const num = entity.trim();
+        return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "guest" : "guests"}`;
+      }
+      
+      // If entity already includes "guests" or similar, use as-is
+      if (/\b(guests?|people)\b/.test(entityLowerGuests)) {
+        return query + (query.endsWith(" ") ? "" : " ") + entity;
+      }
+      
+      // Otherwise, just append (entity might already be formatted)
+      return query + (query.endsWith(" ") ? "" : " ") + entity;
+
+    case "nights":
+      // For nights, append the number and add "night"/"nights" if not already present
+      const entityLowerNights = entity.toLowerCase().trim();
+      
+      // Check if "nights" or "night" already exists in the query
+      const hasNights = /\b(nights?|days?)\b/.test(queryLower);
+      
+      // Check if query ends with "for [number]" pattern (without nights word)
+      const forNumberMatchNights = queryLower.match(/\bfor\s+(\d+)\s*$/);
+      
+      // If query ends with "for [number]" and entity is a number, replace the number
+      if (forNumberMatchNights && /^\d+$/.test(entity.trim()) && !hasNights) {
+        const num = entity.trim();
+        const nightWord = num === "1" ? "night" : "nights";
+        // Replace the number after "for" with the new number + nights
+        return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${nightWord}`);
+      }
+      
+      // If entity is just a number and "nights" is not already in query, add it
+      if (/^\d+$/.test(entity.trim()) && !hasNights) {
+        const num = entity.trim();
+        return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "night" : "nights"}`;
+      }
+      
+      // If entity already includes "nights" or similar, use as-is
+      if (/\b(nights?|days?)\b/.test(entityLowerNights)) {
+        return query + (query.endsWith(" ") ? "" : " ") + entity;
+      }
+      
+      // Otherwise, just append (entity might already be formatted)
+      return query + (query.endsWith(" ") ? "" : " ") + entity;
+
     case "theme":
     case "budget":
       // For theme and budget, just append to end (no keyword prefix)
