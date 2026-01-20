@@ -438,6 +438,15 @@ class EntityRules:
             entities['airlines'] = self._extract_airlines(query)
         elif intent == 'hotel':
             entities['hotels'] = self._extract_hotels(query)
+
+            if entities['dates']:
+                entities['checkin'] = entities['dates'][0]
+        
+        # Second date (if present) is checkout
+            if len(entities['dates']) > 1:
+                entities['checkout'] = entities['dates'][1]
+
+
         elif intent == 'holiday':
             entities['themes'] = self._extract_holiday_themes(query)
             entities['budgets'] = self._extract_holiday_budgets(query)
