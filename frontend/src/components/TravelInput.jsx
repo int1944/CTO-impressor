@@ -15,25 +15,25 @@ export function TravelInput({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
-  const ghostRef = useRef(null);
-  const ghostMeasureRef = useRef(null);
 
-  const updateScrollToEnd = () => {
+  // Move cursor to end of input
+  const moveCursorToEnd = () => {
     const input = inputRef.current;
     if (!input) return;
-    const ghostWidth = ghostMeasureRef.current?.scrollWidth || input.scrollWidth;
-    const maxScrollLeft = Math.max(0, ghostWidth - input.clientWidth);
-    input.scrollLeft = maxScrollLeft;
-    if (ghostRef.current) {
-      ghostRef.current.scrollLeft = maxScrollLeft;
-    }
+    const length = input.value.length;
+    requestAnimationFrame(() => {
+      input.setSelectionRange(length, length);
+      input.scrollLeft = input.scrollWidth;
+    });
   };
 
   useEffect(() => {
-    setLocalQuery(query);
-    // Scroll input to keep placeholder visible when query changes
-    setTimeout(updateScrollToEnd, 0);
-  }, [query]);
+    // When query changes from outside (e.g., suggestion clicked), update and move cursor to end
+    if (query !== localQuery) {
+      setLocalQuery(query);
+      moveCursorToEnd();
+    }
+  }, [query, localQuery]);
 
   useEffect(() => {
     // Show suggestions whenever available (even if user typed slot keyword)
@@ -45,23 +45,16 @@ export function TravelInput({
     }
   }, [suggestions]);
 
-  useEffect(() => {
-    // Keep placeholder visible when it changes
-    setTimeout(updateScrollToEnd, 0);
-  }, [placeholder, localQuery]);
-
   const handleInputChange = (e) => {
     const newQuery = e.target.value;
+    const cursorPos = e.target.selectionStart;
     setLocalQuery(newQuery);
     onQueryChange(newQuery);
 
     // Update cursor position
     if (onCursorChange) {
-      onCursorChange(e.target.selectionStart);
+      onCursorChange(cursorPos);
     }
-
-    // Scroll to keep placeholder visible when text is long
-    setTimeout(updateScrollToEnd, 0);
   };
 
   const handleKeyDown = (e) => {
@@ -164,30 +157,22 @@ export function TravelInput({
       {/* Input field */}
       <div className="relative flex items-center gap-3">
         <div className="relative flex-1">
-          <div
-            ref={ghostMeasureRef}
-            className="absolute inset-y-0 left-0 right-0 px-6 py-5 text-lg font-semibold opacity-0 pointer-events-none whitespace-pre overflow-hidden"
-            aria-hidden="true"
-          >
-            {(localQuery || "") + (shouldShowPlaceholder() && placeholder ? ` ${placeholder}` : "")}
-          </div>
-          {/* Ghost text overlay */}
-          {(localQuery || shouldShowPlaceholder()) && (
+          {/* Ghost placeholder text (appears after the actual text) */}
+          {shouldShowPlaceholder() && placeholder && (
             <div
-              ref={ghostRef}
-              className="pointer-events-none absolute inset-y-0 left-0 right-0 px-6 py-5 text-lg font-medium overflow-hidden"
+              className="pointer-events-none absolute inset-y-0 left-0 right-0 px-6 py-5 text-lg font-medium overflow-hidden whitespace-nowrap"
               aria-hidden="true"
             >
-              <span className="text-gray-800 whitespace-pre">{localQuery || ""}</span>
-              {shouldShowPlaceholder() && (
-                <span className="text-gray-400/90 whitespace-pre">
-                  {localQuery ? " " : ""}
-                  {placeholder}
-                </span>
-              )}
+              {/* Invisible spacer matching the actual query text */}
+              <span className="opacity-0">{localQuery || ""}</span>
+              {/* Visible placeholder text */}
+              <span className="text-gray-400/90">
+                {localQuery ? " " : ""}
+                {placeholder}
+              </span>
             </div>
           )}
-          {/* Actual input */}
+          {/* Actual input with visible text */}
           <input
             ref={inputRef}
             type="text"
@@ -199,18 +184,19 @@ export function TravelInput({
                 onCursorChange(e.target.selectionStart);
               }
             }}
-            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-            onScroll={(e) => {
-              if (ghostRef.current) {
-                ghostRef.current.scrollLeft = e.currentTarget.scrollLeft;
-              }
+            onFocus={() => {
+              if (suggestions.length > 0) setShowSuggestions(true);
             }}
-            className="w-full px-6 py-5 text-lg bg-white rounded-2xl border-0 focus:outline-none focus:ring-4 focus:ring-red-400/50 shadow-2xl transition-all duration-200 text-transparent caret-red-600 placeholder:text-gray-400 font-medium whitespace-nowrap"
-            placeholder="Type your travel query..."
+            className="w-full px-6 py-5 text-lg bg-white rounded-2xl border-0 focus:outline-none focus:ring-4 focus:ring-red-400/50 shadow-2xl transition-all duration-200 text-gray-800 caret-red-600 placeholder:text-gray-400 font-medium"
+            placeholder="Ask Myra..."
             style={{
               caretColor: "#dc2626",
               direction: "ltr",
               textAlign: "left",
+              overflowX: "auto",
+              whiteSpace: "nowrap",
+              scrollbarWidth: "thin",
+              scrollbarColor: "#ef4444 #f3f4f6",
             }}
           />
         </div>

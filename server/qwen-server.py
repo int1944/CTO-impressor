@@ -481,6 +481,12 @@ Missing: LOB, destination, source, date
 Next: LOB type (must identify first)
 
 Output: "book a [flight/hotel/train/holiday]"
+
+Query: "3 people"
+
+Present: passengers
+
+Missing: LOB, destination, date
  
 RULES:
 
