@@ -529,6 +529,25 @@ export function insertEntity(query, entity, entityType) {
         finalEntityText = finalEntityText.substring(4).trim();
       }
       return query + (query.endsWith(" ") ? "" : " ") + finalEntityText;
+    case "return":
+      // For return dates, use "returning on" or "return on"
+      const queryLowerReturn = query.toLowerCase();
+      if (queryLowerReturn.includes(" return ") || queryLowerReturn.endsWith(" return") || queryLowerReturn.endsWith("return")) {
+        // If "return" keyword exists, check if it's followed by a date
+        const returnMatch = query.match(/\breturn(?:ing)?\s+on\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|in|with|$))/i);
+        if (returnMatch) {
+          // Replace existing return date
+          return query.replace(returnMatch[0], `returning on ${entity}`);
+        }
+        // If "return" exists but no date, add "on [date]"
+        if (queryLowerReturn.endsWith(" return") || queryLowerReturn.endsWith("return")) {
+          return query.trim() + " on " + entity;
+        }
+        return query.replace(/\breturn(?:ing)?\b/i, `returning on ${entity}`);
+      }
+      // If no "return" keyword, add "returning on [date]"
+      return query + (query.endsWith(" ") ? "" : " ") + `returning on ${entity}`;
+
     case "theme":
     case "budget":
     case "category":
