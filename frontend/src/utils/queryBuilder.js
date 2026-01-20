@@ -420,7 +420,26 @@ export function insertEntity(query, entity, entityType) {
 
       // Check if "passengers" or "passenger" already exists in the query
       const hasPassengers = /\b(passengers?|travelers?|people|adults?)\b/.test(queryLower);
-
+      
+      // Check if query ends with "for [number] [incomplete_word]" pattern (e.g., "for 2 pa" or "for 2 pas")
+      const forNumberIncompleteMatch = queryLower.match(/\bfor\s+\d+\s+\w+\s*$/);
+      if (forNumberIncompleteMatch) {
+        // Replace the incomplete "for [number] [partial_text]" with the new complete value
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        // If entity is just a number, add "passengers" word
+        if (/^\d+$/.test(entityText)) {
+          const num = entityText;
+          const passengerWord = num === "1" ? "passenger" : "passengers";
+          return query.replace(/\bfor\s+\d+\s+\w+\s*$/i, `for ${num} ${passengerWord}`);
+        }
+        // If entity already includes full text, use it
+        return query.replace(/\bfor\s+\d+\s+\w+\s*$/i, `for ${entityText}`);
+      }
+      
       // Check if query ends with "for [number]" pattern (without passengers word)
       const forNumberMatch = queryLower.match(/\bfor\s+(\d+)\s*$/);
 
@@ -435,16 +454,26 @@ export function insertEntity(query, entity, entityType) {
       // If entity is just a number and "passengers" is not already in query, add it
       if (/^\d+$/.test(entity.trim()) && !hasPassengers) {
         const num = entity.trim();
-        return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "passenger" : "passengers"}`;
+        return query + (query.endsWith(" ") ? "" : " ") + `for ${num} ${num === "1" ? "passenger" : "passengers"}`;
       }
 
       // If entity already includes "passengers" or similar, use as-is
       if (/\b(passengers?|travelers?|people|adults?)\b/.test(entityLowerPassengers)) {
-        return query + (query.endsWith(" ") ? "" : " ") + entity;
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        return query + (query.endsWith(" ") ? "" : " ") + entityText;
       }
 
       // Otherwise, just append (entity might already be formatted)
-      return query + (query.endsWith(" ") ? "" : " ") + entity;
+      let finalEntityTextPass = entity.trim();
+      // Strip "for" from entity if it already has it
+      if (finalEntityTextPass.toLowerCase().startsWith('for ')) {
+        finalEntityTextPass = finalEntityTextPass.substring(4).trim();
+      }
+      return query + (query.endsWith(" ") ? "" : " ") + finalEntityTextPass;
 
     case "guests":
       // For guests, append the number and add "guest"/"guests" if not already present
@@ -452,7 +481,26 @@ export function insertEntity(query, entity, entityType) {
 
       // Check if "guests" or "guest" already exists in the query
       const hasGuests = /\b(guests?|people)\b/.test(queryLower);
-
+      
+      // Check if query ends with "for [number] [incomplete_word]" pattern (e.g., "for 2 gu" or "for 2 gue")
+      const forNumberIncompleteMatchGuests = queryLower.match(/\bfor\s+\d+\s+\w+\s*$/);
+      if (forNumberIncompleteMatchGuests) {
+        // Replace the incomplete "for [number] [partial_text]" with the new complete value
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        // If entity is just a number, add "guests" word
+        if (/^\d+$/.test(entityText)) {
+          const num = entityText;
+          const guestWord = num === "1" ? "guest" : "guests";
+          return query.replace(/\bfor\s+\d+\s+\w+\s*$/i, `for ${num} ${guestWord}`);
+        }
+        // If entity already includes full text, use it
+        return query.replace(/\bfor\s+\d+\s+\w+\s*$/i, `for ${entityText}`);
+      }
+      
       // Check if query ends with "for [number]" pattern (without guests word)
       const forNumberMatchGuests = queryLower.match(/\bfor\s+(\d+)\s*$/);
 
@@ -467,16 +515,26 @@ export function insertEntity(query, entity, entityType) {
       // If entity is just a number and "guests" is not already in query, add it
       if (/^\d+$/.test(entity.trim()) && !hasGuests) {
         const num = entity.trim();
-        return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "guest" : "guests"}`;
+        return query + (query.endsWith(" ") ? "" : " ") + `for ${num} ${num === "1" ? "guest" : "guests"}`;
       }
 
       // If entity already includes "guests" or similar, use as-is
       if (/\b(guests?|people)\b/.test(entityLowerGuests)) {
-        return query + (query.endsWith(" ") ? "" : " ") + entity;
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        return query + (query.endsWith(" ") ? "" : " ") + entityText;
       }
 
       // Otherwise, just append (entity might already be formatted)
-      return query + (query.endsWith(" ") ? "" : " ") + entity;
+      let finalEntityTextGuest = entity.trim();
+      // Strip "for" from entity if it already has it
+      if (finalEntityTextGuest.toLowerCase().startsWith('for ')) {
+        finalEntityTextGuest = finalEntityTextGuest.substring(4).trim();
+      }
+      return query + (query.endsWith(" ") ? "" : " ") + finalEntityTextGuest;
 
     case "nights":
       // For nights, append the number and add "night"/"nights" if not already present
@@ -484,7 +542,26 @@ export function insertEntity(query, entity, entityType) {
 
       // Check if "nights" or "night" already exists in the query
       const hasNights = /\b(nights?|days?)\b/.test(queryLower);
-
+      
+      // Check if query ends with "for [number] [incomplete_word]" pattern (e.g., "for 2 ni" or "for 2 nig")
+      const forNumberIncompleteMatchNights = queryLower.match(/\bfor\s+\d+\s+\w+\s*$/);
+      if (forNumberIncompleteMatchNights) {
+        // Replace the incomplete "for [number] [partial_text]" with the new complete value
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        // If entity is just a number, add "nights" word
+        if (/^\d+$/.test(entityText)) {
+          const num = entityText;
+          const nightWord = num === "1" ? "night" : "nights";
+          return query.replace(/\bfor\s+\d+\s+\w+\s*$/i, `for ${num} ${nightWord}`);
+        }
+        // If entity already includes full text, use it
+        return query.replace(/\bfor\s+\d+\s+\w+\s*$/i, `for ${entityText}`);
+      }
+      
       // Check if query ends with "for [number]" pattern (without nights word)
       const forNumberMatchNights = queryLower.match(/\bfor\s+(\d+)\s*$/);
 
@@ -499,16 +576,26 @@ export function insertEntity(query, entity, entityType) {
       // If entity is just a number and "nights" is not already in query, add it
       if (/^\d+$/.test(entity.trim()) && !hasNights) {
         const num = entity.trim();
-        return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "night" : "nights"}`;
+        return query + (query.endsWith(" ") ? "" : " ") + `for ${num} ${num === "1" ? "night" : "nights"}`;
       }
 
       // If entity already includes "nights" or similar, use as-is
       if (/\b(nights?|days?)\b/.test(entityLowerNights)) {
-        return query + (query.endsWith(" ") ? "" : " ") + entity;
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        return query + (query.endsWith(" ") ? "" : " ") + entityText;
       }
 
       // Otherwise, just append (entity might already be formatted)
-      return query + (query.endsWith(" ") ? "" : " ") + entity;
+      let finalEntityText = entity.trim();
+      // Strip "for" from entity if it already has it
+      if (finalEntityText.toLowerCase().startsWith('for ')) {
+        finalEntityText = finalEntityText.substring(4).trim();
+      }
+      return query + (query.endsWith(" ") ? "" : " ") + finalEntityText;
     case "theme":
     case "budget":
       // For theme and budget, just append to end (no keyword prefix)

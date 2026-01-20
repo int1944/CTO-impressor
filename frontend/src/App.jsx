@@ -127,6 +127,36 @@ function App() {
     return suggestionText;
   };
 
+  // Format number-based selections (passengers, guests, etc.)
+  const formatNumberSelection = (suggestionText, entityType) => {
+    // If it's already formatted (contains the type word), return as-is
+    if (entityType === 'passengers' && /\b(passenger|passengers|traveler|travelers)\b/i.test(suggestionText)) {
+      return suggestionText;
+    }
+    if (entityType === 'guests' && /\b(guest|guests)\b/i.test(suggestionText)) {
+      return suggestionText;
+    }
+    if (entityType === 'rooms' && /\b(room|rooms)\b/i.test(suggestionText)) {
+      return suggestionText;
+    }
+
+    // If it's just a number, format it with the appropriate word
+    if (/^\d+$/.test(suggestionText)) {
+      const num = suggestionText;
+      if (entityType === 'passengers') {
+        return num === "1" ? `${num} passenger` : `${num} passengers`;
+      }
+      if (entityType === 'guests') {
+        return num === "1" ? `${num} guest` : `${num} guests`;
+      }
+      if (entityType === 'rooms') {
+        return num === "1" ? `${num} room` : `${num} rooms`;
+      }
+    }
+
+    return suggestionText;
+  };
+
   const handleSuggestionClick = (suggestion) => {
     if (!suggestion.selectable || suggestion.is_placeholder) return;
 
@@ -179,6 +209,9 @@ function App() {
     
     // Format nights selection
     formattedText = formatNightsSelection(formattedText, placeholderText);
+    
+    // Format number-based selections (passengers, guests, rooms)
+    formattedText = formatNumberSelection(formattedText, suggestion.entity_type);
 
     // Insert entity with formatted text
     const newQuery = insertEntity(
