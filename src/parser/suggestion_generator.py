@@ -373,7 +373,7 @@ class SuggestionGenerator:
     
     def _get_class_suggestions(self, intent: str) -> List[str]:
         """Get class suggestions."""
-        if intent == 'flight':
+        if intent == 'flight' or intent == None:
             return ['economy', 'business', 'first', 'premium economy']
         elif intent == 'train':
             return ['sleeper', '3AC', '2AC', '1AC', 'general']
