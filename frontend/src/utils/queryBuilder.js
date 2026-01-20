@@ -66,99 +66,93 @@ export function insertEntity(query, entity, entityType) {
     case "from":
       // If entity already starts with "from", use it as-is
       if (entityLower.startsWith("from ")) {
-        // Check if "from" already exists in query (with spaces or at end)
-        if (queryLower.includes(" from ") || queryLower.endsWith(" from") || queryLower.endsWith("from")) {
-          const fromMatch = query.match(
-            /\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:to|on|for|in|$))/i
-          );
-          if (fromMatch) {
-            return query.replace(fromMatch[0], entity);
-          }
-          // If "from" is at the end without a city, just append the entity (which has "from")
-          if (queryLower.endsWith(" from") || queryLower.endsWith("from")) {
-            return query.trim() + " " + entity.trim();
-          }
+        // Check if "from" already exists AT THE END of query (the most recent "from")
+        if (queryLower.endsWith(" from") || queryLower.endsWith("from")) {
+          // If "from" is at the end without a city, just append the city (strip "from" from entity)
+          const cityOnly = entity.replace(/^from\s+/i, '').trim();
+          return query.trim() + " " + cityOnly;
         }
+        
+        // Try to match "from" followed by a city at the END of the query
+        const fromMatchEnd = query.match(/\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+        if (fromMatchEnd) {
+          // Replace the "from city" at the end
+          return query.replace(fromMatchEnd[0], entity);
+        }
+        
         // Just append the entity (it already has "from")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
       
-      // Check if "from" already exists (with spaces or at end)
-      if (queryLower.includes(" from ") || queryLower.endsWith(" from") || queryLower.endsWith("from")) {
+      // Check if "from" already exists AT THE END (with spaces or at end)
+      if (queryLower.endsWith(" from") || queryLower.endsWith("from")) {
         // If "from" is at the end, just append the city
-        if (queryLower.endsWith(" from") || queryLower.endsWith("from")) {
-          return query.trim() + " " + entity;
-        }
-        // If "from" has a city after it, replace that city
-        const fromMatch = query.match(
-          /\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:to|on|for|in|$))/i
+        return query.trim() + " " + entity;
+      }
+      
+      // Try to find "from" followed by a city AT THE END of query
+      const fromMatchEnd = query.match(/\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+      if (fromMatchEnd) {
+        return query.replace(fromMatchEnd[0], `from ${entity}`);
+      }
+      
+      // No "from" at the end - insert it after intent word if exists, or at end
+      const intentMatchFrom = query.match(/\b(flight|hotel|train|holiday)\b/i);
+      if (intentMatchFrom) {
+        const pos = intentMatchFrom.index + intentMatchFrom[0].length;
+        return (
+          query.substring(0, pos) + ` from ${entity}` + query.substring(pos)
         );
-        if (fromMatch) {
-          return query.replace(fromMatch[0], `from ${entity}`);
-        }
       }
-      // Insert "from" if not present
-      if (!queryLower.includes(" from ") && !queryLower.endsWith(" from") && !queryLower.endsWith("from")) {
-        // Find intent word position
-        const intentMatch = query.match(/\b(flight|hotel|train|holiday)\b/i);
-        if (intentMatch) {
-          const pos = intentMatch.index + intentMatch[0].length;
-          return (
-            query.substring(0, pos) + ` from ${entity}` + query.substring(pos)
-          );
-        }
-        // Fallback: just append
-        return query + (query.endsWith(" ") ? "" : " ") + `from ${entity}`;
-      }
+      
+      // Fallback: just append at the end
+      return query + (query.endsWith(" ") ? "" : " ") + `from ${entity}`;
       break;
 
     case "to":
       // If entity already starts with "to", use it as-is
       if (entityLower.startsWith("to ")) {
-        // Check if "to" already exists in query (with spaces or at end)
-        if (queryLower.includes(" to ") || queryLower.endsWith(" to") || queryLower.endsWith("to")) {
-          const toMatch = query.match(
-            /\bto\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:on|for|in|from|$))/i
-          );
-          if (toMatch) {
-            return query.replace(toMatch[0], entity);
-          }
-          // If "to" is at the end without a city, just append the entity (which has "to")
-          if (queryLower.endsWith(" to") || queryLower.endsWith("to")) {
-            return query.trim() + " " + entity.trim();
-          }
+        // Check if "to" already exists AT THE END of query (the most recent "to")
+        if (queryLower.endsWith(" to") || queryLower.endsWith("to")) {
+          // If "to" is at the end without a city, just append the city (strip "to" from entity)
+          const cityOnly = entity.replace(/^to\s+/i, '').trim();
+          return query.trim() + " " + cityOnly;
         }
+        
+        // Try to match "to" followed by a city at the END of the query
+        const toMatchEnd = query.match(/\bto\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+        if (toMatchEnd) {
+          // Replace the "to city" at the end
+          return query.replace(toMatchEnd[0], entity);
+        }
+        
         // Just append the entity (it already has "to")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
       
-      // Check if "to" already exists (with spaces or at end)
-      if (queryLower.includes(" to ") || queryLower.endsWith(" to") || queryLower.endsWith("to")) {
+      // Check if "to" already exists AT THE END (with spaces or at end)
+      if (queryLower.endsWith(" to") || queryLower.endsWith("to")) {
         // If "to" is at the end, just append the city
-        if (queryLower.endsWith(" to") || queryLower.endsWith("to")) {
-          return query.trim() + " " + entity;
-        }
-        // If "to" has a city after it, replace that city
-        const toMatch = query.match(
-          /\bto\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:on|for|in|from|$))/i
+        return query.trim() + " " + entity;
+      }
+      
+      // Try to find "to" followed by a city AT THE END of query
+      const toMatchEnd = query.match(/\bto\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+      if (toMatchEnd) {
+        return query.replace(toMatchEnd[0], `to ${entity}`);
+      }
+      
+      // No "to" at the end - insert it after "from" if exists, or at end
+      const fromMatch = query.match(/\bfrom\s+[^\s]+(?:\s+[^\s]+)*/i);
+      if (fromMatch) {
+        const pos = fromMatch.index + fromMatch[0].length;
+        return (
+          query.substring(0, pos) + ` to ${entity}` + query.substring(pos)
         );
-        if (toMatch) {
-          return query.replace(toMatch[0], `to ${entity}`);
-        }
       }
-      // Insert "to" if not present
-      if (!queryLower.includes(" to ") && !queryLower.endsWith(" to") && !queryLower.endsWith("to")) {
-        // Insert after "from" if exists
-        const fromMatch = query.match(/\bfrom\s+[^\s]+(?:\s+[^\s]+)*/i);
-        if (fromMatch) {
-          const pos = fromMatch.index + fromMatch[0].length;
-          return (
-            query.substring(0, pos) + ` to ${entity}` + query.substring(pos)
-          );
-        }
-        // Fallback: just append
-        return query + (query.endsWith(" ") ? "" : " ") + `to ${entity}`;
-      }
+      
+      // Fallback: just append at the end
+      return query + (query.endsWith(" ") ? "" : " ") + `to ${entity}`;
       break;
 
     case "date":
@@ -200,50 +194,47 @@ export function insertEntity(query, entity, entityType) {
       // For hotels: use "in" keyword
       // If entity already starts with "in", use it as-is
       if (entityLower.startsWith("in ")) {
-        // Check if "in" already exists in query (with spaces or at end)
-        if (queryLower.includes(" in ") || queryLower.endsWith(" in") || queryLower.endsWith("in")) {
-          const inMatch = query.match(
-            /\bin\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|check-in|check-out|$))/i
-          );
-          if (inMatch) {
-            return query.replace(inMatch[0], entity);
-          }
-          // If "in" is at the end without a city, just append the entity (which has "in")
-          if (queryLower.endsWith(" in") || queryLower.endsWith("in")) {
-            return query.trim() + " " + entity.trim();
-          }
+        // Check if "in" already exists AT THE END of query (the most recent "in")
+        if (queryLower.endsWith(" in") || queryLower.endsWith("in")) {
+          // If "in" is at the end without a city, just append the city (strip "in" from entity)
+          const cityOnly = entity.replace(/^in\s+/i, '').trim();
+          return query.trim() + " " + cityOnly;
         }
+        
+        // Try to match "in" followed by a city at the END of the query
+        const inMatchEnd = query.match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+        if (inMatchEnd) {
+          // Replace the "in city" at the end
+          return query.replace(inMatchEnd[0], entity);
+        }
+        
         // Just append the entity (it already has "in")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
       
-      // Check if "in" keyword exists (with spaces or at end)
-      if (queryLower.includes(" in ") || queryLower.endsWith(" in") || queryLower.endsWith("in")) {
+      // Check if "in" keyword exists AT THE END (with spaces or at end)
+      if (queryLower.endsWith(" in") || queryLower.endsWith("in")) {
         // If "in" is at the end, just append the city
-        if (queryLower.endsWith(" in") || queryLower.endsWith("in")) {
-          return query.trim() + " " + entity;
-        }
-        // If "in" has a city after it, replace that city
-        const inMatch = query.match(
-          /\bin\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|check-in|check-out|$))/i
+        return query.trim() + " " + entity;
+      }
+      
+      // Try to find "in" followed by a city AT THE END of query
+      const inMatchEnd = query.match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+      if (inMatchEnd) {
+        return query.replace(inMatchEnd[0], `in ${entity}`);
+      }
+      
+      // No "in" at the end - insert it after intent word if exists, or at end
+      const intentMatchCity = query.match(/\bhotel\b/i);
+      if (intentMatchCity) {
+        const pos = intentMatchCity.index + intentMatchCity[0].length;
+        return (
+          query.substring(0, pos) + ` in ${entity}` + query.substring(pos)
         );
-        if (inMatch) {
-          return query.replace(inMatch[0], `in ${entity}`);
-        }
       }
-      // Insert "in" if not present
-      if (!queryLower.includes(" in ") && !queryLower.endsWith(" in") && !queryLower.endsWith("in")) {
-        // Find intent word position (hotel)
-        const intentMatch = query.match(/\bhotel\b/i);
-        if (intentMatch) {
-          const pos = intentMatch.index + intentMatch[0].length;
-          return (
-            query.substring(0, pos) + ` in ${entity}` + query.substring(pos)
-          );
-        }
-        // Fallback: just append
-        return query + (query.endsWith(" ") ? "" : " ") + `in ${entity}`;
-      }
+      
+      // Fallback: just append at the end
+      return query + (query.endsWith(" ") ? "" : " ") + `in ${entity}`;
       break;
 
     case "checkin":
