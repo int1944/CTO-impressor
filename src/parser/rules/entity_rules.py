@@ -37,8 +37,10 @@ class EntityRules:
         (r'\bwith\s+(\d+)\s+people\b', 'guests'),
         (r'\b(\d+)\s+guests?\b', 'guests'),
         (r'\b(\d+)\s+people\b', 'guests'),
-        (r'\bfor\s+(\d+)\b', 'guests_for_number'),
+        (r'\bfor\s+(\d+)\s+guests?\b', 'guests'),  # "for 3 guests" - explicit
+        (r'\bfor\s+(\d+)\s+people\b', 'guests'),  # "for 3 people" - explicit
         (r'\b(with\s+family|with my family|staying with family)\b', 'guests_implicit'),
+        # Note: "for [number]" without "nights" or "guests" is ambiguous - don't mark as guests
     ]
 
     HOTEL_ROOM_TYPE_PATTERNS = [
@@ -589,6 +591,18 @@ class EntityRules:
                     'raw': match.group(0)
                 })
         
+        # Also detect "for [number]" pattern as passengers if no nights mentioned
+        # This helps with flexible ordering like "weekend for 2"
+        if not passengers:
+            # Check for "for [number]" that's not "for [number] nights"
+            for_match = re.search(r'\bfor\s+(\d+)(?:\s+(passengers?|travelers?|people|adults?))?\b', query_lower)
+            if for_match and 'night' not in query_lower:
+                passengers.append({
+                    'text': for_match.group(0),
+                    'type': 'passengers',
+                    'raw': for_match.group(0)
+                })
+        
         return passengers
 
     def _extract_stops(self, query: str) -> List[Dict[str, str]]:
@@ -813,9 +827,14 @@ class EntityRules:
         query_lower = query.lower()
         
         for pattern, guest_type in self.HOTEL_GUESTS_PATTERNS:
-            if guest_type == 'guests_for_number' and 'night' in query_lower:
-                # Avoid treating "for 3 nights" as guests
+            # Skip "for [number]" pattern - it's ambiguous and should be treated as nights first
+            # Only extract guests if explicitly mentioned (e.g., "for 3 guests", "with 3 guests")
+            if guest_type == 'guests_for_number':
                 continue
+            # Also skip if "nights" or "days" appears (it's nights, not guests)
+            if 'night' in query_lower or 'day' in query_lower:
+                if re.search(r'\bfor\s+\d+\s+(nights?|days?)\b', query_lower):
+                    continue
             match = self.pattern_matcher.match_pattern(query_lower, pattern)
             if match:
                 guests.append({
