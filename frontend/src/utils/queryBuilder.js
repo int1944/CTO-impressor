@@ -69,7 +69,7 @@ export function insertEntity(query, entity, entityType) {
         // Check if "from" already exists in query (with spaces or at end)
         if (queryLower.includes(" from ") || queryLower.endsWith(" from") || queryLower.endsWith("from")) {
           const fromMatch = query.match(
-            /\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:to|on|for|in|$))/i
+            /\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:to|on|for|in)|$)/i
           );
           if (fromMatch) {
             return query.replace(fromMatch[0], entity);
@@ -91,7 +91,7 @@ export function insertEntity(query, entity, entityType) {
         }
         // If "from" has a city after it, replace that city
         const fromMatch = query.match(
-          /\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:to|on|for|in|$))/i
+          /\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:to|on|for|in)|$)/i
         );
         if (fromMatch) {
           return query.replace(fromMatch[0], `from ${entity}`);
@@ -118,7 +118,7 @@ export function insertEntity(query, entity, entityType) {
         // Check if "to" already exists in query (with spaces or at end)
         if (queryLower.includes(" to ") || queryLower.endsWith(" to") || queryLower.endsWith("to")) {
           const toMatch = query.match(
-            /\bto\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:on|for|in|from|$))/i
+            /\bto\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:on|for|in|from)|$)/i
           );
           if (toMatch) {
             return query.replace(toMatch[0], entity);
@@ -140,7 +140,7 @@ export function insertEntity(query, entity, entityType) {
         }
         // If "to" has a city after it, replace that city
         const toMatch = query.match(
-          /\bto\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:on|for|in|from|$))/i
+          /\bto\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:on|for|in|from)|$)/i
         );
         if (toMatch) {
           return query.replace(toMatch[0], `to ${entity}`);
