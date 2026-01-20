@@ -47,67 +47,58 @@ function App() {
   };
 
   // Format suggestion with placeholder keyword (like test_live.py)
-  const formatSuggestionWithPlaceholder = (suggestionText, placeholderText, currentQuery) => {
-    if (!placeholderText) {
-      return suggestionText;
-    }
-
-    const placeholderWords = placeholderText.trim().split(/\s+/);
-    const placeholderFirst = placeholderWords[0]?.toLowerCase();
-    const placeholderSecond = placeholderWords[1]?.toLowerCase();
-    // Check for "starting on" (two words)
-    const isStartingOn = placeholderFirst === 'starting' && placeholderSecond === 'on';
-    const prefixCandidates = new Set(['from', 'to', 'on', 'at', 'in', 'with', 'for', 'check-in', 'check-out', 'starting']);
-    
-    if (!placeholderFirst || (!prefixCandidates.has(placeholderFirst) && !isStartingOn)) {
-      return suggestionText;
-    }
-
+  const formatSuggestionWithPlaceholder = (suggestionText, entityType, placeholderText, currentQuery) => {
     const suggestionLower = suggestionText.toLowerCase().trim();
     
-    // If suggestion already starts with the keyword, don't add it again
-    if (isStartingOn) {
-      if (suggestionLower.startsWith('starting on ')) {
-        return suggestionText;
-      }
-    } else if (suggestionLower.startsWith(placeholderFirst + ' ')) {
+    // Map entity types to their keywords
+    const entityKeywordMap = {
+      'from': 'from',
+      'to': 'to',
+      'city': 'in',
+      'checkin': 'check-in',
+      'checkout': 'check-out'
+    };
+    
+    // Get the keyword for this specific entity type
+    const entityKeyword = entityKeywordMap[entityType];
+    
+    // If no entity keyword or suggestion already has it, return as-is
+    if (!entityKeyword) {
+      return suggestionText;
+    }
+    
+    // If suggestion already starts with the keyword, return as-is
+    if (suggestionLower.startsWith(entityKeyword + ' ')) {
       return suggestionText;
     }
 
-    const queryLower = currentQuery.toLowerCase().trim();
+    const queryLower = currentQuery.toLowerCase().trim(); // TRIM to handle trailing spaces
     const queryWords = queryLower.split(/\s+/);
     const lastWord = queryWords[queryWords.length - 1] || "";
 
-    // If user already typed a different slot keyword, don't force the placeholder keyword
-    if (prefixCandidates.has(lastWord) && lastWord !== placeholderFirst) {
-      return suggestionText;
-    }
-
-    // Check if query already ends with the placeholder keyword (with or without space)
-    // For "check-in" and "check-out", handle both with and without hyphen
-    if (placeholderFirst === 'check-in' || placeholderFirst === 'check-out') {
-      const baseWord = placeholderFirst.replace('-', '');
-      // Check if query ends with the keyword (with space, without space, or as last word)
-      if (lastWord === placeholderFirst || lastWord === baseWord || 
-          queryLower.endsWith(' ' + placeholderFirst) || queryLower.endsWith(' ' + baseWord) ||
-          queryLower.endsWith(placeholderFirst) || queryLower.endsWith(baseWord)) {
-        return suggestionText; // Don't add keyword, user already typed it
+    // Check if query already ends with THIS entity's keyword
+    // If YES → return just the city name (no keyword)
+    // If NO → return "keyword city" (with keyword)
+    
+    if (entityKeyword === 'check-in' || entityKeyword === 'check-out') {
+      const baseWord = entityKeyword.replace('-', '');
+      // Check if keyword already at end (check trimmed query)
+      if (lastWord === entityKeyword || lastWord === baseWord || 
+          queryLower.endsWith(' ' + entityKeyword) || queryLower.endsWith(entityKeyword)) {
+        return suggestionText; // Just the value, keyword already there
       }
     } else {
-      // Check if query ends with the keyword (with space, without space, or as last word)
-      // This handles cases like "flight from" -> don't add "from" again
-      if (lastWord === placeholderFirst || 
-          queryLower.endsWith(' ' + placeholderFirst) || 
-          queryLower.endsWith(placeholderFirst)) {
-        return suggestionText; // Don't add keyword, user already typed it
+      // For "to", "from", "in", etc.
+      // Check if keyword already at end (check trimmed query)
+      if (lastWord === entityKeyword || 
+          queryLower.endsWith(' ' + entityKeyword) ||
+          queryLower === entityKeyword) {
+        return suggestionText; // Just the value, keyword already there
       }
     }
 
-    // Add the keyword prefix
-    if (isStartingOn) {
-      return `starting on ${suggestionText}`;
-    }
-    return `${placeholderFirst} ${suggestionText}`;
+    // Keyword NOT present at end → add it
+    return `${entityKeyword} ${suggestionText}`;
   };
 
   // Format nights selection (like test_live.py)
@@ -205,6 +196,7 @@ function App() {
     // Format suggestion with placeholder keyword (like terminal version)
     let formattedText = formatSuggestionWithPlaceholder(
       suggestion.text,
+      suggestion.entity_type,
       placeholderText,
       query
     );

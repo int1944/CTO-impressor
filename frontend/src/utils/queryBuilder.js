@@ -58,7 +58,7 @@ export function replaceEntity(query, oldEntity, newEntity) {
  * @returns {string} Updated query
  */
 export function insertEntity(query, entity, entityType) {
-  const queryLower = query.toLowerCase();
+  const queryLower = query.toLowerCase().trim(); // TRIM to handle trailing spaces
   const entityLower = entity.toLowerCase().trim();
 
   // Handle different entity types
@@ -67,61 +67,61 @@ export function insertEntity(query, entity, entityType) {
       // If entity already starts with "from", use it as-is
       if (entityLower.startsWith("from ")) {
         // Check if "from" already exists AT THE END of query (just the word "from", not followed by anything)
-        if (queryLower.endsWith(" from") || queryLower === "from") {
+        if (queryLower.endsWith(" from") || queryLower.endsWith("from") || queryLower === "from") {
           // If "from" is at the end without a city, just append the city (strip "from" from entity)
           const cityOnly = entity.replace(/^from\s+/i, '').trim();
           return query.trim() + " " + cityOnly;
         }
 
         // No "from" at end - just append the entity (it already has "from")
-        return query + (query.endsWith(" ") ? "" : " ") + entity;
+        return query.trim() + " " + entity;
       }
 
       // Check if "from" already exists AT THE END (just the word "from")
-      if (queryLower.endsWith(" from") || queryLower === "from") {
+      if (queryLower.endsWith(" from") || queryLower.endsWith("from") || queryLower === "from") {
         // If "from" is at the end, just append the city
         return query.trim() + " " + entity;
       }
 
       // Try to find "from" followed by a city AT THE END of query (only when there's a city name after "from")
       // This should only match patterns like "flight from Mumbai" not other phrases
-      const fromMatchEnd = query.match(/\bfrom\s+([A-Z][a-zA-Z\s]+)$/);
+      const fromMatchEnd = query.trim().match(/\bfrom\s+([A-Z][a-zA-Z\s]+)$/);
       if (fromMatchEnd) {
-        return query.replace(fromMatchEnd[0], `from ${entity}`);
+        return query.trim().replace(fromMatchEnd[0], `from ${entity}`);
       }
 
       // No "from" at the end - just append at the end
-      return query + (query.endsWith(" ") ? "" : " ") + `from ${entity}`;
+      return query.trim() + " " + `from ${entity}`;
 
     case "to":
       // If entity already starts with "to", use it as-is
       if (entityLower.startsWith("to ")) {
         // Check if "to" already exists AT THE END of query (just the word "to", not followed by anything)
-        if (queryLower.endsWith(" to") || queryLower === "to") {
+        if (queryLower.endsWith(" to") || queryLower.endsWith("to") || queryLower === "to") {
           // If "to" is at the end without a city, just append the city (strip "to" from entity)
           const cityOnly = entity.replace(/^to\s+/i, '').trim();
           return query.trim() + " " + cityOnly;
         }
 
         // No "to" at end - just append the entity (it already has "to")
-        return query + (query.endsWith(" ") ? "" : " ") + entity;
+        return query.trim() + " " + entity;
       }
 
       // Check if "to" already exists AT THE END (just the word "to")
-      if (queryLower.endsWith(" to") || queryLower === "to") {
+      if (queryLower.endsWith(" to") || queryLower.endsWith("to") || queryLower === "to") {
         // If "to" is at the end, just append the city
         return query.trim() + " " + entity;
       }
 
       // Try to find "to" followed by a city AT THE END of query (only when there's a city name after "to")
       // This should only match patterns like "flight to Mumbai" not "want to book"
-      const toMatchEnd = query.match(/\bto\s+([A-Z][a-zA-Z\s]+)$/);
+      const toMatchEnd = query.trim().match(/\bto\s+([A-Z][a-zA-Z\s]+)$/);
       if (toMatchEnd) {
-        return query.replace(toMatchEnd[0], `to ${entity}`);
+        return query.trim().replace(toMatchEnd[0], `to ${entity}`);
       }
 
       // No "to" at the end - just append at the end
-      return query + (query.endsWith(" ") ? "" : " ") + `to ${entity}`;
+      return query.trim() + " " + `to ${entity}`;
 
     case "date":
       // For holidays, check if "starting on" should be used
@@ -170,14 +170,14 @@ export function insertEntity(query, entity, entityType) {
         }
 
         // Try to match "in" followed by a city at the END of the query
-        const inMatchEnd = query.match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+        const inMatchEnd = query.trim().match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
         if (inMatchEnd) {
           // Replace the "in city" at the end
-          return query.replace(inMatchEnd[0], entity);
+          return query.trim().replace(inMatchEnd[0], entity);
         }
 
         // Just append the entity (it already has "in")
-        return query + (query.endsWith(" ") ? "" : " ") + entity;
+        return query.trim() + " " + entity;
       }
 
       // Check if "in" keyword exists AT THE END (with spaces or at end)
@@ -187,22 +187,22 @@ export function insertEntity(query, entity, entityType) {
       }
 
       // Try to find "in" followed by a city AT THE END of query
-      const inMatchEnd = query.match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+      const inMatchEnd = query.trim().match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
       if (inMatchEnd) {
-        return query.replace(inMatchEnd[0], `in ${entity}`);
+        return query.trim().replace(inMatchEnd[0], `in ${entity}`);
       }
 
       // No "in" at the end - insert it after intent word if exists, or at end
-      const intentMatchCity = query.match(/\bhotel\b/i);
+      const intentMatchCity = query.trim().match(/\bhotel\b/i);
       if (intentMatchCity) {
         const pos = intentMatchCity.index + intentMatchCity[0].length;
         return (
-          query.substring(0, pos) + ` in ${entity}` + query.substring(pos)
+          query.trim().substring(0, pos) + ` in ${entity}` + query.trim().substring(pos)
         );
       }
 
       // Fallback: just append at the end
-      return query + (query.endsWith(" ") ? "" : " ") + `in ${entity}`;
+      return query.trim() + " " + `in ${entity}`;
 
     case "checkin":
       // For hotels: use "check-in" keyword
