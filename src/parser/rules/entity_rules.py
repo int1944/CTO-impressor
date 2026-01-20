@@ -19,10 +19,27 @@ class EntityRules:
         (r'\b(yesterday)\b', 'yesterday'),
         (r'\b(day after tomorrow|day after)', 'day_after_tomorrow'),
         (r'\b(this\s+)?(weekend|sat|saturday|sun|sunday)', 'this_weekend'),
+    
+    # Week/month relative periods
+        (r'\b(next\s+week|next\s+month|this\s+week|this\s+month|coming\s+week|coming\s+month)', 'relative_period'),
+        (r'\b(in\s+\d+\s+weeks?|in\s+\d+\s+months?|in\s+\d+\s+days?)', 'relative_future'),
+    
+    # Day names with optional "next"
         (r'\b(next\s+)?(monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)', 'day_name'),
-        (r'\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})', 'date_format'),  # DD/MM/YYYY or DD-MM-YYYY
-        (r'\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)', 'date_named'),
+    
+    # Numeric date formats
+        (r'\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})', 'date_format'),
+    
+    # Full month names WITH optional ordinal suffix (st/nd/rd/th)
+        (r'\b(\d{1,2})(st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)', 'date_named'),
+    
+    # Abbreviated month names WITH optional ordinal suffix
+        (r'\b(\d{1,2})(st|nd|rd|th)?\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b', 'date_named_abbrev'),
+    
+    # Standalone ordinal (lower priority)
         (r'\b(\d{1,2})(st|nd|rd|th)\b', 'day_ordinal'),
+    
+    # Hindi date words
         (r'\b(aaj)\b', 'today'),
         (r'\b(kal)\b', 'relative_day'),
     ]
