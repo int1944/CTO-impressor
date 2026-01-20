@@ -85,18 +85,18 @@ export function insertEntity(query, entity, entityType) {
           const cityOnly = entity.replace(/^from\s+/i, '').trim();
           return query.trim() + " " + cityOnly;
         }
-        
+
         // Try to match "from" followed by a city at the END of the query
         const fromMatchEnd = query.match(/\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
         if (fromMatchEnd) {
           // Replace the "from city" at the end
           return query.replace(fromMatchEnd[0], entity);
         }
-        
+
         // Just append the entity (it already has "from")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Check if "from" already exists AT THE END (with spaces or at end)
       if (queryLower.endsWith(" from") || queryLower.endsWith("from")) {
         // If "from" is at the end, just append the city
@@ -124,15 +124,13 @@ export function insertEntity(query, entity, entityType) {
         // Fallback: just append
         return query + (query.endsWith(" ") ? "" : " ") + `from ${entity}`;
       }
-        return query.trim() + " " + entity;
-      }
-      
+
       // Try to find "from" followed by a city AT THE END of query
       const fromMatchEnd = query.match(/\bfrom\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
       if (fromMatchEnd) {
         return query.replace(fromMatchEnd[0], `from ${entity}`);
       }
-      
+
       // No "from" at the end - insert it after intent word if exists, or at end
       const intentMatchFrom = query.match(/\b(flight|hotel|train|holiday)\b/i);
       if (intentMatchFrom) {
@@ -141,10 +139,9 @@ export function insertEntity(query, entity, entityType) {
           query.substring(0, pos) + ` from ${entity}` + query.substring(pos)
         );
       }
-      
+
       // Fallback: just append at the end
       return query + (query.endsWith(" ") ? "" : " ") + `from ${entity}`;
-      break;
 
     case "to":
       // If entity already starts with "to", use it as-is
@@ -168,18 +165,18 @@ export function insertEntity(query, entity, entityType) {
           const cityOnly = entity.replace(/^to\s+/i, '').trim();
           return query.trim() + " " + cityOnly;
         }
-        
+
         // Try to match "to" followed by a city at the END of the query
         const toMatchEnd = query.match(/\bto\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
         if (toMatchEnd) {
           // Replace the "to city" at the end
           return query.replace(toMatchEnd[0], entity);
         }
-        
+
         // Just append the entity (it already has "to")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Check if "to" already exists AT THE END (with spaces or at end)
       if (queryLower.endsWith(" to") || queryLower.endsWith("to")) {
         // If "to" is at the end, just append the city
@@ -207,15 +204,13 @@ export function insertEntity(query, entity, entityType) {
         // Fallback: just append
         return query + (query.endsWith(" ") ? "" : " ") + `to ${entity}`;
       }
-        return query.trim() + " " + entity;
-      }
-      
+
       // Try to find "to" followed by a city AT THE END of query
       const toMatchEnd = query.match(/\bto\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
       if (toMatchEnd) {
         return query.replace(toMatchEnd[0], `to ${entity}`);
       }
-      
+
       // No "to" at the end - insert it after "from" if exists, or at end
       const fromMatch = query.match(/\bfrom\s+[^\s]+(?:\s+[^\s]+)*/i);
       if (fromMatch) {
@@ -224,15 +219,14 @@ export function insertEntity(query, entity, entityType) {
           query.substring(0, pos) + ` to ${entity}` + query.substring(pos)
         );
       }
-      
+
       // Fallback: just append at the end
       return query + (query.endsWith(" ") ? "" : " ") + `to ${entity}`;
-      break;
 
     case "date":
       // For holidays, check if "starting on" should be used
       const isHolidayQuery = queryLower.includes("holiday") || queryLower.includes("vacation") || queryLower.includes("package");
-      
+
       // Check if "starting on" exists (for holidays)
       if (isHolidayQuery && (queryLower.includes(" starting on ") || queryLower.endsWith(" starting on"))) {
         const startingOnMatch = query.match(
@@ -245,7 +239,7 @@ export function insertEntity(query, entity, entityType) {
           return query.trim() + " " + entity;
         }
       }
-      
+
       // Check if date keyword exists
       if (queryLower.includes(" on ")) {
         const onMatch = query.match(
@@ -255,7 +249,7 @@ export function insertEntity(query, entity, entityType) {
           return query.replace(onMatch[0], `on ${entity}`);
         }
       }
-      
+
       // Insert "starting on" for holidays if not present, otherwise "on"
       if (isHolidayQuery && !queryLower.includes(" starting on ") && !queryLower.includes(" on ")) {
         return query + (query.endsWith(" ") ? "" : " ") + `starting on ${entity}`;
@@ -274,30 +268,30 @@ export function insertEntity(query, entity, entityType) {
           const cityOnly = entity.replace(/^in\s+/i, '').trim();
           return query.trim() + " " + cityOnly;
         }
-        
+
         // Try to match "in" followed by a city at the END of the query
         const inMatchEnd = query.match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
         if (inMatchEnd) {
           // Replace the "in city" at the end
           return query.replace(inMatchEnd[0], entity);
         }
-        
+
         // Just append the entity (it already has "in")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Check if "in" keyword exists AT THE END (with spaces or at end)
       if (queryLower.endsWith(" in") || queryLower.endsWith("in")) {
         // If "in" is at the end, just append the city
         return query.trim() + " " + entity;
       }
-      
+
       // Try to find "in" followed by a city AT THE END of query
       const inMatchEnd = query.match(/\bin\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
       if (inMatchEnd) {
         return query.replace(inMatchEnd[0], `in ${entity}`);
       }
-      
+
       // No "in" at the end - insert it after intent word if exists, or at end
       const intentMatchCity = query.match(/\bhotel\b/i);
       if (intentMatchCity) {
@@ -306,10 +300,9 @@ export function insertEntity(query, entity, entityType) {
           query.substring(0, pos) + ` in ${entity}` + query.substring(pos)
         );
       }
-      
+
       // Fallback: just append at the end
       return query + (query.endsWith(" ") ? "" : " ") + `in ${entity}`;
-      break;
 
     case "checkin":
       // For hotels: use "check-in" keyword
@@ -317,8 +310,8 @@ export function insertEntity(query, entity, entityType) {
       if (entityLower.startsWith("check-in ") || entityLower.startsWith("checkin ")) {
         // Check if "check-in" already exists in query (with spaces or at end)
         const hasCheckin = queryLower.includes(" check-in ") || queryLower.includes(" checkin ") ||
-                          queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
-                          queryLower.endsWith("check-in") || queryLower.endsWith("checkin");
+          queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
+          queryLower.endsWith("check-in") || queryLower.endsWith("checkin");
         if (hasCheckin) {
           const checkinMatch = query.match(
             /\b(check-in|checkin)\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|check-out|$))/i
@@ -328,22 +321,22 @@ export function insertEntity(query, entity, entityType) {
           }
           // If "check-in" is at the end without a date, just append the entity (which has "check-in")
           if (queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
-              queryLower.endsWith("check-in") || queryLower.endsWith("checkin")) {
+            queryLower.endsWith("check-in") || queryLower.endsWith("checkin")) {
             return query.trim() + " " + entity.trim();
           }
         }
         // Just append the entity (it already has "check-in")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Check if "check-in" keyword exists (with spaces or at end)
       const hasCheckin = queryLower.includes(" check-in ") || queryLower.includes(" checkin ") ||
-                        queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
-                        queryLower.endsWith("check-in") || queryLower.endsWith("checkin");
+        queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
+        queryLower.endsWith("check-in") || queryLower.endsWith("checkin");
       if (hasCheckin) {
         // If "check-in" is at the end, just append the date
         if (queryLower.endsWith(" check-in") || queryLower.endsWith(" checkin") ||
-            queryLower.endsWith("check-in") || queryLower.endsWith("checkin")) {
+          queryLower.endsWith("check-in") || queryLower.endsWith("checkin")) {
           return query.trim() + " " + entity;
         }
         // If "check-in" has a date after it, replace that date
@@ -366,8 +359,8 @@ export function insertEntity(query, entity, entityType) {
       if (entityLower.startsWith("check-out ") || entityLower.startsWith("checkout ")) {
         // Check if "check-out" already exists in query (with spaces or at end)
         const hasCheckout = queryLower.includes(" check-out ") || queryLower.includes(" checkout ") ||
-                           queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
-                           queryLower.endsWith("check-out") || queryLower.endsWith("checkout");
+          queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
+          queryLower.endsWith("check-out") || queryLower.endsWith("checkout");
         if (hasCheckout) {
           const checkoutMatch = query.match(
             /\b(check-out|checkout)\s+([^\s]+(?:\s+[^\s]+)*?)(?=\s+(?:for|on|$))/i
@@ -377,22 +370,22 @@ export function insertEntity(query, entity, entityType) {
           }
           // If "check-out" is at the end without a date, just append the entity (which has "check-out")
           if (queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
-              queryLower.endsWith("check-out") || queryLower.endsWith("checkout")) {
+            queryLower.endsWith("check-out") || queryLower.endsWith("checkout")) {
             return query.trim() + " " + entity.trim();
           }
         }
         // Just append the entity (it already has "check-out")
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Check if "check-out" keyword exists (with spaces or at end)
       const hasCheckout = queryLower.includes(" check-out ") || queryLower.includes(" checkout ") ||
-                         queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
-                         queryLower.endsWith("check-out") || queryLower.endsWith("checkout");
+        queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
+        queryLower.endsWith("check-out") || queryLower.endsWith("checkout");
       if (hasCheckout) {
         // If "check-out" is at the end, just append the date
         if (queryLower.endsWith(" check-out") || queryLower.endsWith(" checkout") ||
-            queryLower.endsWith("check-out") || queryLower.endsWith("checkout")) {
+          queryLower.endsWith("check-out") || queryLower.endsWith("checkout")) {
           return query.trim() + " " + entity;
         }
         // If "check-out" has a date after it, replace that date
@@ -424,13 +417,13 @@ export function insertEntity(query, entity, entityType) {
     case "passengers":
       // For passengers, append the number and add "passenger"/"passengers" if not already present
       const entityLowerPassengers = entity.toLowerCase().trim();
-      
+
       // Check if "passengers" or "passenger" already exists in the query
       const hasPassengers = /\b(passengers?|travelers?|people|adults?)\b/.test(queryLower);
-      
+
       // Check if query ends with "for [number]" pattern (without passengers word)
       const forNumberMatch = queryLower.match(/\bfor\s+(\d+)\s*$/);
-      
+
       // If query ends with "for [number]" and entity is a number, replace the number
       if (forNumberMatch && /^\d+$/.test(entity.trim()) && !hasPassengers) {
         const num = entity.trim();
@@ -438,31 +431,31 @@ export function insertEntity(query, entity, entityType) {
         // Replace the number after "for" with the new number + passengers
         return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${passengerWord}`);
       }
-      
+
       // If entity is just a number and "passengers" is not already in query, add it
       if (/^\d+$/.test(entity.trim()) && !hasPassengers) {
         const num = entity.trim();
         return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "passenger" : "passengers"}`;
       }
-      
+
       // If entity already includes "passengers" or similar, use as-is
       if (/\b(passengers?|travelers?|people|adults?)\b/.test(entityLowerPassengers)) {
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Otherwise, just append (entity might already be formatted)
       return query + (query.endsWith(" ") ? "" : " ") + entity;
 
     case "guests":
       // For guests, append the number and add "guest"/"guests" if not already present
       const entityLowerGuests = entity.toLowerCase().trim();
-      
+
       // Check if "guests" or "guest" already exists in the query
       const hasGuests = /\b(guests?|people)\b/.test(queryLower);
-      
+
       // Check if query ends with "for [number]" pattern (without guests word)
       const forNumberMatchGuests = queryLower.match(/\bfor\s+(\d+)\s*$/);
-      
+
       // If query ends with "for [number]" and entity is a number, replace the number
       if (forNumberMatchGuests && /^\d+$/.test(entity.trim()) && !hasGuests) {
         const num = entity.trim();
@@ -470,31 +463,31 @@ export function insertEntity(query, entity, entityType) {
         // Replace the number after "for" with the new number + guests
         return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${guestWord}`);
       }
-      
+
       // If entity is just a number and "guests" is not already in query, add it
       if (/^\d+$/.test(entity.trim()) && !hasGuests) {
         const num = entity.trim();
         return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "guest" : "guests"}`;
       }
-      
+
       // If entity already includes "guests" or similar, use as-is
       if (/\b(guests?|people)\b/.test(entityLowerGuests)) {
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Otherwise, just append (entity might already be formatted)
       return query + (query.endsWith(" ") ? "" : " ") + entity;
 
     case "nights":
       // For nights, append the number and add "night"/"nights" if not already present
       const entityLowerNights = entity.toLowerCase().trim();
-      
+
       // Check if "nights" or "night" already exists in the query
       const hasNights = /\b(nights?|days?)\b/.test(queryLower);
-      
+
       // Check if query ends with "for [number]" pattern (without nights word)
       const forNumberMatchNights = queryLower.match(/\bfor\s+(\d+)\s*$/);
-      
+
       // If query ends with "for [number]" and entity is a number, replace the number
       if (forNumberMatchNights && /^\d+$/.test(entity.trim()) && !hasNights) {
         const num = entity.trim();
@@ -502,21 +495,20 @@ export function insertEntity(query, entity, entityType) {
         // Replace the number after "for" with the new number + nights
         return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${nightWord}`);
       }
-      
+
       // If entity is just a number and "nights" is not already in query, add it
       if (/^\d+$/.test(entity.trim()) && !hasNights) {
         const num = entity.trim();
         return query + (query.endsWith(" ") ? "" : " ") + `${num} ${num === "1" ? "night" : "nights"}`;
       }
-      
+
       // If entity already includes "nights" or similar, use as-is
       if (/\b(nights?|days?)\b/.test(entityLowerNights)) {
         return query + (query.endsWith(" ") ? "" : " ") + entity;
       }
-      
+
       // Otherwise, just append (entity might already be formatted)
       return query + (query.endsWith(" ") ? "" : " ") + entity;
-
     case "theme":
     case "budget":
       // For theme and budget, just append to end (no keyword prefix)

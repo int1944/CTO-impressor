@@ -573,7 +573,7 @@ RULES:
         # Holidays
         "starting on [date]": "date",
         "for [days]": "nights",
-        "for [travelers]": "passengers",
+        "for [travelers]": "guests",
         "[theme]": "theme",
         "[budget]": "budget",
         # Fallback options
