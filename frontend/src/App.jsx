@@ -400,6 +400,7 @@ function App() {
               intent={intent}
               onTagClick={handleTagClick}
               suggestions={suggestions}
+              query={query}
             />
 
           </div>

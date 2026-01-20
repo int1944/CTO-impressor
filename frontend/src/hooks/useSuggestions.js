@@ -47,6 +47,36 @@ export function useSuggestions(query, cursorPosition = null, context = {}) {
       return;
     }
 
+    // Only fetch suggestions if user has entered at least one word AND a space
+    // This prevents unnecessary API calls and cache hits until user completes first word
+    const trimmedQuery = debouncedQuery.trim();
+    const words = trimmedQuery.split(/\s+/);
+    
+    // Check if user has typed at least one word followed by a space
+    // This is true if: query has multiple words OR query ends with a space (indicating completion of first word)
+    const hasCompletedFirstWord = words.length > 1 || debouncedQuery.endsWith(' ');
+    
+    if (!hasCompletedFirstWord) {
+      // Don't fetch suggestions yet - user is still typing their first word
+      // Cancel any in-flight request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      // Reset state to avoid showing stale suggestions
+      if (lastFetchedQuery.current !== null) {
+        setSuggestions([]);
+        setIntent(null);
+        setNextSlot(null);
+        setSource(null);
+        setLatency(0);
+        setLoading(false);
+        lastFetchedQuery.current = null;
+      }
+      return;
+    }
+
     // Skip if this is the same query we just fetched
     if (lastFetchedQuery.current === debouncedQuery) {
       return;

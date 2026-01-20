@@ -1,4 +1,4 @@
-export function PlaceholderTags({ nextSlot, intent, onTagClick, suggestions = [] }) {
+export function PlaceholderTags({ nextSlot, intent, onTagClick, suggestions = [], query = "" }) {
   // Define slot mappings for each intent
   const slotMappings = {
     flight: [
@@ -36,6 +36,11 @@ export function PlaceholderTags({ nextSlot, intent, onTagClick, suggestions = []
 
   // Only show intent selection buttons when no intent is detected
   if (!intent) {
+    // Hide intent buttons if user has typed anything
+    if (query && query.trim().length > 0) {
+      return null;
+    }
+    
     // Get intent suggestions from API if available, otherwise use defaults
     const intentSuggestions = suggestions
       .filter(s => s.entity_type === 'intent' && s.selectable && !s.is_placeholder)
@@ -96,13 +101,12 @@ export function PlaceholderTags({ nextSlot, intent, onTagClick, suggestions = []
 
   return (
     <div className="flex flex-wrap gap-2 mt-3 justify-center">
-      <button
+      <div
         key={activeSlot.key}
-        onClick={() => onTagClick && onTagClick(activeSlot.key)}
-        className="px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 bg-red-100 text-red-700 shadow-md ring-2 ring-red-400"
+        className="px-5 py-2.5 rounded-full text-sm font-semibold bg-red-100 text-red-700 shadow-md ring-2 ring-red-400 cursor-default"
       >
         {activeSlot.label}
-      </button>
+      </div>
     </div>
   );
 }
