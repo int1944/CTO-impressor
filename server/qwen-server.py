@@ -327,9 +327,9 @@ HOW TO DETECT PRESENT ENTITIES:
  
 FLIGHTS:
 
-- source: "from [city]" or "[city]" before "to"
+- source: "from [source]" or "[source]" before "to"
 
-- destination: "to [city]" or "[city]" after "from X to"
+- destination: "to [destination]" or "[destination]" after "from X to"
 
 - date: "on [date]", "on [day]", "this [day]", "tomorrow"
 
@@ -343,7 +343,7 @@ make sure no other entities are present other than above for flights.
  
 HOTELS:
 
-- location: "in [city]", "at [location]"
+- location: "in [city]"
 
 - check-in: "on [date]", "check-in on", "arriving on"
 
@@ -359,9 +359,9 @@ make sure no other entities are present other than above for hotels.
  
 TRAINS:
 
-- source: "from [station]" or "from [city]"
+- source: "from [source]"
 
-- destination: "to [station]" or "to [city]"
+- destination: "to [destination]" 
 
 - date: "on [date]", "on [day]"
 
@@ -415,9 +415,9 @@ Next: destination (first in order)
 
 Output: "to [destination]"
 
-Query: "flight from delhi"
+Query: "flight from city1"
 
-Present: source (delhi)
+Present: source (city1)
 
 Missing: destination, date, passengers
 
@@ -427,9 +427,9 @@ Output: "to [destination]"
 
 NOT: "from [source]" (already present)
  
-Query: "flight from delhi to mumbai"
+Query: "flight from city1 to city2"
 
-Present: source (delhi), destination (mumbai)
+Present: source (city1), destination (city2)
 
 Missing: date, passengers, class
 
@@ -439,9 +439,9 @@ Output: "on [date]"
 
 NOT: "from [source]" or "to [destination]" (both present)
 
-Query: "hotel in goa"
+Query: "hotel in city1"
 
-Present: location (goa)
+Present: location (city1)
 
 Missing: check-in date, nights, guests
 
@@ -451,9 +451,9 @@ Output: "on [check-in date]"
 
 NOT: "in [location]" (already present)
  
-Query: "hotel in goa for 3 nights"
+Query: "hotel in city1 for 3 nights"
 
-Present: location (goa), nights (3 nights)
+Present: location (city1), nights (3 nights)
 
 Missing: check-in date, guests, room type
 
@@ -463,9 +463,9 @@ Output: "on [check-in date]"
 
 NOT: "in [location]" or "for [nights]" (both present)
  
-Query: "flight to delhi"
+Query: "flight to city1"
 
-Present: destination (delhi)
+Present: destination (city1)
 
 Missing: source, date, passengers
 
@@ -553,18 +553,23 @@ RULES:
         # Flights
         "from [source]": "from",
         "to [destination]": "to",
+        "destination": "to",
         "on [date]": "date",
         "return [date]": "return",
+        "passengers": "passengers",
         "for [passengers]": "passengers",
         "in [class]": "class",
         "in [cabin class]": "class",
         "in [time]": "time",
         # Hotels
         "in [location]": "city",
+        "location": "city",
         "on [check-in date]": "checkin",
         "for [nights]": "nights",
+        "guests": "guests",
         "with [guests]": "guests",
-        "in [room type]": "rooms",
+        "room type": "rooms",
+        "in [room type]": "room type",
         "[category]": "category",
         "check-out [date]": "checkout",
         # Trains (same as flights for most fields)
