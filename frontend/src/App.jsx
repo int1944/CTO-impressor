@@ -8,6 +8,7 @@ import { TimeWidget } from "./components/TimeWidget";
 import { ClassWidget } from "./components/ClassWidget";
 import { NumberWidget } from "./components/NumberWidget";
 import { CategoryWidget } from "./components/CategoryWidget";
+import { RoomTypeWidget } from "./components/RoomTypeWidget";
 import { QuotaWidget } from "./components/QuotaWidget";
 import { AirlineWidget } from "./components/AirlineWidget";
 import { ThemeWidget } from "./components/ThemeWidget";
@@ -278,6 +279,7 @@ function App() {
       rooms: "for",
       nights: "for",
       category: "in",
+      room_type: "in",
       quota: "in",
       theme: "",  // No keyword for theme
       budget: "",  // No keyword for budget
@@ -352,6 +354,11 @@ function App() {
     suggestions.some(
       (s) => s.entity_type === "category" && !s.is_placeholder
     );
+  const showRoomTypeWidget =
+    nextSlot === "room_type" ||
+    suggestions.some(
+      (s) => s.entity_type === "room_type" && !s.is_placeholder
+    );
   const showQuotaWidget =
     nextSlot === "quota" ||
     suggestions.some(
@@ -384,6 +391,7 @@ function App() {
     showNightsWidget ||
     showRoomsWidget ||
     showCategoryWidget ||
+    showRoomTypeWidget ||
     showQuotaWidget ||
     showAirlineWidget ||
     showThemeWidget ||
@@ -526,6 +534,14 @@ function App() {
                />
              )}
 
+             {/* Room Type Widget - Hide when inline suggestions showing */}
+            {showRoomTypeWidget && !showInlineSuggestions && (
+               <RoomTypeWidget
+                 suggestions={suggestions}
+                 onRoomTypeSelect={handleSuggestionClick}
+               />
+             )}
+
              {/* Quota Widget - Hide when inline suggestions showing */}
             {showQuotaWidget && !showInlineSuggestions && (
                <QuotaWidget
@@ -586,7 +602,8 @@ function App() {
          !showGuestsWidget && 
          !showNightsWidget && 
          !showRoomsWidget && 
-         !showCategoryWidget && 
+         !showCategoryWidget &&
+        !showRoomTypeWidget && 
          !showQuotaWidget && 
          !showAirlineWidget &&
          !showThemeWidget &&
