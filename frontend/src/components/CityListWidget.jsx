@@ -1,9 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { searchCities } from "../services/api";
+import { useDebounce } from "../hooks/useDebounce";
 
 export function CityListWidget({ suggestions, onCitySelect, entityType }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Filter city suggestions
+  // Filter city suggestions from the main suggestions
   const citySuggestions = useMemo(() => {
     return suggestions.filter(
       (s) =>
@@ -15,15 +20,37 @@ export function CityListWidget({ suggestions, onCitySelect, entityType }) {
     );
   }, [suggestions]);
 
-  // Filter by search term
-  const filteredCities = useMemo(() => {
-    if (!searchTerm) return citySuggestions;
-    return citySuggestions.filter((city) =>
-      city.text.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [citySuggestions, searchTerm]);
+  // Search for cities when user types
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      setIsSearching(true);
+      searchCities(debouncedSearchTerm, 10)
+        .then((data) => {
+          // Convert search results to suggestion format
+          const results = data.suggestions.map((city) => ({
+            text: city.name,
+            entity_type: entityType || "to",
+            selectable: true,
+            is_placeholder: false,
+            confidence: 0.95 // High confidence for exact matches
+          }));
+          setSearchResults(results);
+          setIsSearching(false);
+        })
+        .catch((error) => {
+          console.error("City search error:", error);
+          setSearchResults([]);
+          setIsSearching(false);
+        });
+    } else {
+      setSearchResults([]);
+    }
+  }, [debouncedSearchTerm, entityType]);
 
-  if (citySuggestions.length === 0) {
+  // Show search results if searching, otherwise show default suggestions
+  const displayCities = searchTerm ? searchResults : citySuggestions;
+
+  if (citySuggestions.length === 0 && !searchTerm) {
     return null;
   }
 
@@ -41,12 +68,16 @@ export function CityListWidget({ suggestions, onCitySelect, entityType }) {
 
         {/* City list */}
         <div className="max-h-64 overflow-y-auto space-y-2">
-          {filteredCities.length === 0 ? (
+          {isSearching ? (
+            <div className="text-center text-gray-400 text-sm py-4">
+              Searching...
+            </div>
+          ) : displayCities.length === 0 ? (
             <div className="text-center text-gray-400 text-sm py-4">
               No cities found
             </div>
           ) : (
-            filteredCities.map((city, index) => (
+            displayCities.map((city, index) => (
               <button
                 key={`city-${index}`}
                 onClick={() => onCitySelect && onCitySelect(city)}

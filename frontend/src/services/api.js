@@ -46,4 +46,26 @@ export const getSuggestions = async (
   }
 };
 
+/**
+ * Search for cities by name
+ * @param {string} query - The search query (city name)
+ * @param {number} limit - Maximum number of results
+ * @returns {Promise<object>} City search response
+ */
+export const searchCities = async (query, limit = 10) => {
+  try {
+    const cityApiUrl = import.meta.env.VITE_CITY_API_URL || "http://localhost:8000";
+    const response = await axios.get(`${cityApiUrl}/search`, {
+      params: {
+        q: query,
+        limit: limit
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error searching cities:", error);
+    throw error;
+  }
+};
+
 export default api;
