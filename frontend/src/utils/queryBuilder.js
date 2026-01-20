@@ -443,12 +443,23 @@ export function insertEntity(query, entity, entityType) {
       // Check if query ends with "for [number]" pattern (without passengers word)
       const forNumberMatch = queryLower.match(/\bfor\s+(\d+)\s*$/);
 
-      // If query ends with "for [number]" and entity is a number, replace the number
-      if (forNumberMatch && /^\d+$/.test(entity.trim()) && !hasPassengers) {
-        const num = entity.trim();
-        const passengerWord = num === "1" ? "passenger" : "passengers";
-        // Replace the number after "for" with the new number + passengers
-        return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${passengerWord}`);
+      // If query ends with "for [number]", replace it with the new entity
+      if (forNumberMatch) {
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        
+        // If entity is just a number, add "passengers" word
+        if (/^\d+$/.test(entityText)) {
+          const num = entityText;
+          const passengerWord = num === "1" ? "passenger" : "passengers";
+          return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${passengerWord}`);
+        }
+        
+        // If entity already includes full text (e.g., "3 passengers"), use it
+        return query.replace(/\bfor\s+\d+\s*$/i, `for ${entityText}`);
       }
 
       // If entity is just a number and "passengers" is not already in query, add it
@@ -504,12 +515,23 @@ export function insertEntity(query, entity, entityType) {
       // Check if query ends with "for [number]" pattern (without guests word)
       const forNumberMatchGuests = queryLower.match(/\bfor\s+(\d+)\s*$/);
 
-      // If query ends with "for [number]" and entity is a number, replace the number
-      if (forNumberMatchGuests && /^\d+$/.test(entity.trim()) && !hasGuests) {
-        const num = entity.trim();
-        const guestWord = num === "1" ? "guest" : "guests";
-        // Replace the number after "for" with the new number + guests
-        return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${guestWord}`);
+      // If query ends with "for [number]", replace it with the new entity
+      if (forNumberMatchGuests) {
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        
+        // If entity is just a number, add "guests" word
+        if (/^\d+$/.test(entityText)) {
+          const num = entityText;
+          const guestWord = num === "1" ? "guest" : "guests";
+          return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${guestWord}`);
+        }
+        
+        // If entity already includes full text (e.g., "3 guests"), use it
+        return query.replace(/\bfor\s+\d+\s*$/i, `for ${entityText}`);
       }
 
       // If entity is just a number and "guests" is not already in query, add it
@@ -565,12 +587,23 @@ export function insertEntity(query, entity, entityType) {
       // Check if query ends with "for [number]" pattern (without nights word)
       const forNumberMatchNights = queryLower.match(/\bfor\s+(\d+)\s*$/);
 
-      // If query ends with "for [number]" and entity is a number, replace the number
-      if (forNumberMatchNights && /^\d+$/.test(entity.trim()) && !hasNights) {
-        const num = entity.trim();
-        const nightWord = num === "1" ? "night" : "nights";
-        // Replace the number after "for" with the new number + nights
-        return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${nightWord}`);
+      // If query ends with "for [number]", replace it with the new entity
+      if (forNumberMatchNights) {
+        let entityText = entity.trim();
+        // Strip "for" from entity if it already has it
+        if (entityText.toLowerCase().startsWith('for ')) {
+          entityText = entityText.substring(4).trim();
+        }
+        
+        // If entity is just a number, add "nights" word
+        if (/^\d+$/.test(entityText)) {
+          const num = entityText;
+          const nightWord = num === "1" ? "night" : "nights";
+          return query.replace(/\bfor\s+\d+\s*$/i, `for ${num} ${nightWord}`);
+        }
+        
+        // If entity already includes full text (e.g., "3 nights"), use it
+        return query.replace(/\bfor\s+\d+\s*$/i, `for ${entityText}`);
       }
 
       // If entity is just a number and "nights" is not already in query, add it
