@@ -54,8 +54,8 @@ export const getSuggestions = async (
  */
 export const searchCities = async (query, limit = 10) => {
   try {
-    const cityApiUrl = import.meta.env.VITE_CITY_API_URL || "http://localhost:8000";
-    const response = await axios.get(`${cityApiUrl}/search`, {
+    // Use the main API instead of separate city service
+    const response = await api.get('/search-cities', {
       params: {
         q: query,
         limit: limit

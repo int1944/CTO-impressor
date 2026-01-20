@@ -120,6 +120,33 @@ async def get_suggestions(request: SuggestionRequest):
     )
 
 
+@app.get("/search-cities")
+async def search_cities(q: str, limit: int = 10):
+    """
+    Search for cities by name prefix.
+    
+    Args:
+        q: Search query (city name prefix)
+        limit: Maximum number of results to return
+        
+    Returns:
+        City search response with matching cities sorted by population
+    """
+    from ..services.city_service import get_city_service
+    
+    city_service = get_city_service()
+    cities = city_service.search_cities(prefix=q, limit=limit)
+    
+    # Format response to match what frontend expects
+    suggestions = [{"name": city, "population": 0} for city in cities]
+    
+    return {
+        "suggestions": suggestions,
+        "count": len(suggestions),
+        "query": q
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
