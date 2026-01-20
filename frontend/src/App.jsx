@@ -17,6 +17,7 @@ import { PlaceholderTags } from "./components/PlaceholderTags";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { insertEntity } from "./utils/queryBuilder";
 import mmtLogo from "./assets/Makemytrip_logo.svg";
+import myraLogo from "./assets/myra_logo-2.svg";
 
 function App() {
   const [query, setQuery] = useState("");
@@ -409,12 +410,17 @@ function App() {
       <div className="w-full max-w-4xl space-y-6 z-10">
         {/* Header */}
         <div className="text-center mb-10 animate-fade-in">
-          {/* MakeMyTrip Logo - Official Logo */}
-          <div className="flex items-center justify-center mb-6">
+          {/* MakeMyTrip + Myra Logo */}
+          <div className="flex items-center justify-center gap-6 mb-6">
             <img 
               src={mmtLogo} 
               alt="MakeMyTrip" 
               className="h-14 w-auto drop-shadow-2xl"
+            />
+            <img 
+              src={myraLogo} 
+              alt="Myra AI" 
+              className="h-16 w-auto drop-shadow-2xl"
             />
           </div>
           <p className="text-white/95 text-xl font-medium drop-shadow-lg">
