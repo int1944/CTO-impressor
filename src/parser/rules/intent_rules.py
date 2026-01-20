@@ -91,6 +91,16 @@ class IntentRules:
             (r'\b(week[-\s]?long|weekend|long\s+weekend)\s+(holiday|vacation|trip)\b', 0.85),
             (r'\b(\d+[-\s]?day|days?)\s+(holiday|vacation|trip|package)\b', 0.88),
             (r'\b(holiday|vacation)\s+for\s+(\d+)\s+(days?|nights?)\b', 0.88),
+            # Romantic/Honeymoon/Getaway patterns - holiday packages
+            (r'\b(romantic)\s+(getaway|trip|vacation|holiday|escape|retreat)\b', 0.95),
+            (r'\b(honeymoon)\s*(trip|package|vacation|to|in|for|with)?\b', 0.95),
+            (r'\b(couple|couples)\s+(trip|getaway|vacation|holiday|retreat)\b', 0.92),
+            (r'\b(anniversary)\s+(trip|getaway|vacation|holiday|celebration)\b', 0.92),
+            (r'\b(romantic|honeymoon|getaway|retreat|escape)\b', 0.85),
+            (r'\b(beach|mountain|hill[-\s]?station|adventure|spiritual|wellness|spa)\s+(getaway|retreat|vacation|trip)\b', 0.88),
+            (r'\b(family)\s+(vacation|holiday|trip|getaway|outing)\b', 0.90),
+            (r'\b(solo)\s+(trip|travel|vacation|adventure)\b', 0.88),
+            (r'\b(group)\s+(trip|tour|vacation|holiday)\b', 0.88),
             # Additional patterns for better coverage
             (r'\b(holiday|vacation|package|trip|tour)\b', 0.80),  # Standalone words (lower confidence)
             (r'\b(i\s+want|i\s+need|i\s+am\s+looking)\s+(a\s+)?(holiday|vacation|package)\b', 0.92),

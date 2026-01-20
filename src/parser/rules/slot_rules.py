@@ -35,7 +35,7 @@ class SlotRules:
         'city': ['in', 'at', 'city', 'location', 'place'],
         'checkin': ['checkin', 'check-in', 'check in', 'arrival'],
         'checkout': ['checkout', 'check-out', 'check out', 'departure'],
-        'guests': ['guests', 'guest', 'people', 'persons'],
+        'guests': ['guests', 'guest', 'people', 'persons', 'with', 'companion', 'partner', 'family', 'friends'],
         'rooms': ['room', 'rooms'],
         'quota': ['quota', 'tatkal', 'general'],
         'return': ['return', 'returning', 'coming back', 'round trip', 'round-trip'],
@@ -113,6 +113,19 @@ class SlotRules:
                     return 'nights'
                 elif 'guests' not in filled_slots:
                     return 'guests'
+        
+        # Special handling for incomplete "with" keyword (for companions/guests)
+        # "romantic getaway with" -> suggest guests/companions
+        if query_lower.endswith(' with') or query_lower.endswith('with'):
+            if intent == 'holiday':
+                if 'guests' not in filled_slots:
+                    return 'guests'
+            elif intent == 'hotel':
+                if 'guests' not in filled_slots:
+                    return 'guests'
+            elif intent in ['flight', 'train']:
+                if 'passengers' not in filled_slots:
+                    return 'passengers'
         
         # Flexible ordering: Check for any explicitly mentioned but unfilled slots first
         # This allows users to mention slots in any order
@@ -440,23 +453,30 @@ class SlotRules:
             if self._has_slot_keyword(query_lower, 'quota'):
                 filled_slots.add('quota')
         elif intent == 'holiday':
-            # Check for 'to' slot - only mark as filled if there's a city after "to"
+            # Check for 'to' slot - mark as filled if there's a destination after "to"
+            # Either a city entity OR just text after "to" keyword
             if self._has_slot_keyword(query_lower, 'to'):
+                # Check if there's a city entity after "to"
                 if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'to'):
                     filled_slots.add('to')
-            # Check for guests slot (similar to hotels)
-            has_explicit_guests = self._has_slot_keyword(query_lower, 'guests') or \
-                                 re.search(r'\bfor\s+\d+\s+guests?\b', query_lower) or \
-                                 re.search(r'\bwith\s+\d+\s+guests?\b', query_lower) or \
-                                 re.search(r'\b\d+\s+guests?\b', query_lower)
+                # Also check if there's any word after "to" (like "to Maldives", "to Goa")
+                elif re.search(r'\bto\s+[A-Za-z]+\b', query_lower):
+                    filled_slots.add('to')
+            # Check for guests slot - only mark as filled if there's an actual number
+            # "with" alone should NOT mark guests as filled
+            has_explicit_guests = re.search(r'\bfor\s+\d+\s+guests?\b', query_lower) or \
+                                 re.search(r'\bwith\s+\d+\s+(guests?|people|persons?|friends?|family)?\b', query_lower) or \
+                                 re.search(r'\b\d+\s+guests?\b', query_lower) or \
+                                 re.search(r'\bwith\s+(my\s+)?(partner|spouse|wife|husband|family|friends)\b', query_lower)
             if entities.get('guests'):
-                # Only mark guests as filled if explicitly mentioned (not ambiguous "for [number]")
-                if has_explicit_guests or not re.search(r'\bfor\s+\d+\b', query_lower):
-                    filled_slots.add('guests')
+                filled_slots.add('guests')
             elif has_explicit_guests:
                 filled_slots.add('guests')
-            # Check for theme slot
-            if entities.get('themes') or self._has_slot_keyword(query_lower, 'theme'):
+            # Check for theme slot - only mark as filled if theme has an actual value
+            # "romantic" in "romantic getaway" is the theme
+            if entities.get('themes'):
+                filled_slots.add('theme')
+            elif re.search(r'\b(honeymoon|adventure|beach|family|romantic|cultural|religious|wellness|spa)\s+(trip|getaway|vacation|holiday|retreat|escape)\b', query_lower):
                 filled_slots.add('theme')
             # Check for budget slot
             if entities.get('budgets') or self._has_slot_keyword(query_lower, 'budget'):
