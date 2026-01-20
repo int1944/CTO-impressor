@@ -70,9 +70,58 @@ class SlotRules:
         filled_slots = self._identify_filled_slots(query, intent, entities)
 
         # If user explicitly typed a slot keyword last, honor it (order-free)
+        # BUT only if that slot is not already filled
         explicit_slot = self._get_last_keyword_slot(query, intent, filled_slots)
-        if explicit_slot:
+        if explicit_slot and explicit_slot not in filled_slots:
             return explicit_slot
+        
+        # Special handling for incomplete "for" keyword
+        # "flight for" -> suggest passengers (for flights/trains)
+        # "hotel for" -> suggest nights or guests (for hotels)
+        query_lower = query.lower().strip()
+        if query_lower.endswith(' for') or query_lower.endswith('for'):
+            if intent in ['flight', 'train']:
+                if 'passengers' not in filled_slots:
+                    return 'passengers'
+            elif intent == 'hotel':
+                # For hotels, "for" typically means nights first, then guests
+                # Check if nights is already filled, if not suggest nights first
+                if 'nights' not in filled_slots:
+                    return 'nights'
+                elif 'guests' not in filled_slots:
+                    return 'guests'
+                # If both are filled, check rooms
+                elif 'rooms' not in filled_slots:
+                    return 'rooms'
+            elif intent == 'holiday':
+                # For holidays, "for" could be nights or passengers
+                if 'nights' not in filled_slots:
+                    return 'nights'
+                elif 'passengers' not in filled_slots:
+                    return 'passengers'
+        
+        # Flexible ordering: Check for any explicitly mentioned but unfilled slots first
+        # This allows users to mention slots in any order
+        query_lower = query.lower()
+        
+        # Check for explicitly mentioned slots that aren't filled yet
+        # Priority: slots mentioned later in query (user is actively typing them)
+        for slot in reversed(slot_order):  # Check in reverse order (later slots first)
+            if slot in filled_slots:
+                continue
+            # Check if this slot's keyword appears in the query
+            if self._has_slot_keyword(query_lower, slot):
+                # If keyword exists but slot isn't filled, suggest this slot
+                return slot
+        
+        # Also check optional slots that are explicitly mentioned
+        optional_slots = self.OPTIONAL_SLOTS.get(intent, [])
+        for slot in reversed(optional_slots):  # Check in reverse order
+            if slot in filled_slots:
+                continue
+            if self._has_slot_keyword(query_lower, slot):
+                # If keyword exists but slot isn't filled, suggest this slot
+                return slot
         
         # For flights and trains, prioritize "from" and "to" before "date"
         # But allow flexibility - if user provides date, we can accept it
@@ -145,18 +194,26 @@ class SlotRules:
         filled_slots = set()
         query_lower = query.lower()
         
-        # Check for intent (always filled if we got here)
-        filled_slots.add('intent')
+        # Check for intent (only filled if intent is actually detected, not None)
+        if intent:
+            filled_slots.add('intent')
         
-        # Check for 'from' slot - only mark as filled if there's a city after "from"
-        if self._has_slot_keyword(query_lower, 'from'):
-            if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'from'):
-                filled_slots.add('from')
+        # Check for 'from' slot - only for flights, trains, and holidays (not hotels)
+        # Only mark as filled if there's a city after "from"
+        if intent in ['flight', 'train', 'holiday']:
+            if self._has_slot_keyword(query_lower, 'from'):
+                if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'from'):
+                    filled_slots.add('from')
         
         # Check for 'to' slot - only mark as filled if there's a city after "to"
-        if self._has_slot_keyword(query_lower, 'to'):
-            if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'to'):
-                filled_slots.add('to')
+        # For hotels, "to" is not a valid slot (they use "city" instead)
+        if intent != 'hotel':
+            if self._has_slot_keyword(query_lower, 'to'):
+                if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'to'):
+                    filled_slots.add('to')
+        elif intent == 'hotel':
+            # For hotels, "to" is not used - they use "city" with "in" keyword
+            pass
         
         # Handle city-first scenarios: when cities appear before "from"/"to" keywords
         if entities.get('cities') and len(entities['cities']) >= 1:
@@ -187,54 +244,63 @@ class SlotRules:
             city_positions.sort()  # Sort by position in query
             
             # Case 1: City appears first, then "to" keyword appears
-            # First city before "to" should be "from"
-            if len(city_positions) >= 1 and to_keyword_pos != -1:
-                first_city_pos, first_city, _ = city_positions[0]
-                # If first city appears before "to" keyword and "from" not already filled
-                if first_city_pos < to_keyword_pos and 'from' not in filled_slots:
-                    # Check if "from" keyword exists - if yes, don't assume
-                    if from_keyword_pos == -1:
-                        # No "from" keyword, first city is "from"
-                        filled_slots.add('from')
-                    elif first_city_pos < from_keyword_pos:
-                        # City appears before "from" keyword - it's still "from"
-                        filled_slots.add('from')
+            # First city before "to" should be "from" (only for flights/trains/holidays)
+            if intent in ['flight', 'train', 'holiday']:
+                if len(city_positions) >= 1 and to_keyword_pos != -1:
+                    first_city_pos, first_city, _ = city_positions[0]
+                    # If first city appears before "to" keyword and "from" not already filled
+                    if first_city_pos < to_keyword_pos and 'from' not in filled_slots:
+                        # Check if "from" keyword exists - if yes, don't assume
+                        if from_keyword_pos == -1:
+                            # No "from" keyword, first city is "from"
+                            filled_slots.add('from')
+                        elif first_city_pos < from_keyword_pos:
+                            # City appears before "from" keyword - it's still "from"
+                            filled_slots.add('from')
             
             # Case 2: "to" keyword exists, check if city appears after it
-            if to_keyword_pos != -1 and len(city_positions) >= 1:
-                # Find city that appears after "to"
-                for pos, city, city_lower in city_positions:
-                    if pos > to_keyword_pos:
-                        # City appears after "to" - mark as "to" slot
-                        after_to = query_lower[to_keyword_pos + 4:].strip() if ' to ' in query_lower[to_keyword_pos:] else query_lower[to_keyword_pos + 3:].strip()
-                        if city_lower in after_to:
+            # Only for flights/trains/holidays (hotels use "city" with "in" keyword)
+            if intent != 'hotel':
+                if to_keyword_pos != -1 and len(city_positions) >= 1:
+                    # Find city that appears after "to"
+                    for pos, city, city_lower in city_positions:
+                        if pos > to_keyword_pos:
+                            # City appears after "to" - mark as "to" slot
+                            after_to = query_lower[to_keyword_pos + 4:].strip() if ' to ' in query_lower[to_keyword_pos:] else query_lower[to_keyword_pos + 3:].strip()
+                            if city_lower in after_to:
+                                filled_slots.add('to')
+                                break
+            
+            # Case 3: "from" keyword exists, check if city appears after it
+            # Only for flights/trains/holidays (hotels don't use "from")
+            if intent in ['flight', 'train', 'holiday']:
+                if from_keyword_pos != -1 and len(city_positions) >= 1:
+                    # Find city that appears after "from" - that's the "from" city
+                    for pos, city, city_lower in city_positions:
+                        if pos > from_keyword_pos:
+                            after_from = query_lower[from_keyword_pos + 6:].strip() if ' from ' in query_lower[from_keyword_pos:] else query_lower[from_keyword_pos + 5:].strip()
+                            if city_lower in after_from:
+                                filled_slots.add('from')
+                                break
+                    
+                    # If a city appears BEFORE "from" keyword, it's likely the destination ("to")
+                    # e.g., "Delhi from Mumbai" -> Delhi is "to", Mumbai is "from"
+                    for pos, city, city_lower in city_positions:
+                        if pos < from_keyword_pos:
+                            # City before "from" is likely "to" (destination)
                             filled_slots.add('to')
                             break
             
-            # Case 3: "from" keyword exists, check if city appears after it
-            if from_keyword_pos != -1 and len(city_positions) >= 1:
-                # Find city that appears after "from" - that's the "from" city
-                for pos, city, city_lower in city_positions:
-                    if pos > from_keyword_pos:
-                        after_from = query_lower[from_keyword_pos + 6:].strip() if ' from ' in query_lower[from_keyword_pos:] else query_lower[from_keyword_pos + 5:].strip()
-                        if city_lower in after_from:
-                            filled_slots.add('from')
-                            break
-                
-                # If a city appears BEFORE "from" keyword, it's likely the destination ("to")
-                # e.g., "Delhi from Mumbai" -> Delhi is "to", Mumbai is "from"
-                for pos, city, city_lower in city_positions:
-                    if pos < from_keyword_pos:
-                        # City before "from" is likely "to" (destination)
-                        filled_slots.add('to')
-                        break
-            
-            # Case 4: No keywords, but cities exist - assume first is "from" (for flights/trains)
-            if intent in ['flight', 'train']:
+            # Case 4: No keywords, but cities exist - assume first is "from" (for flights/trains/holidays only)
+            # For hotels, cities are handled separately with "in" keyword
+            if intent in ['flight', 'train', 'holiday']:
                 if 'from' not in filled_slots and from_keyword_pos == -1 and to_keyword_pos == -1:
                     # No keywords at all, first city is likely "from"
                     if len(city_positions) >= 1:
                         filled_slots.add('from')
+            elif intent == 'hotel':
+                # For hotels, don't assume "from" - cities are handled with "in" keyword
+                pass
         
         # Check for date slot
         if entities.get('dates'):
@@ -249,12 +315,30 @@ class SlotRules:
             filled_slots.add('class')
         
         # Check for passengers slot (flights, trains, and holidays)
-        if entities.get('passengers') and intent in ['flight', 'train', 'holiday']:
-            filled_slots.add('passengers')
+        # Check both entity extraction and keyword patterns
+        if intent in ['flight', 'train', 'holiday']:
+            if entities.get('passengers'):
+                filled_slots.add('passengers')
+            # Also check for "for [number]" pattern that indicates passengers
+            # BUT only if there's actually a number - "for" alone doesn't count
+            elif self._has_passengers_pattern(query_lower):
+                # Make sure it's not just "for" - need a number or explicit passengers word
+                if re.search(r'\bfor\s+\d+\s+(passengers?|travelers?|people|adults?)\b', query_lower) or \
+                   re.search(r'\b\d+\s+(passengers?|travelers?|people|adults?)\b', query_lower) or \
+                   re.search(r'\bfor\s+\d+\b', query_lower):
+                    filled_slots.add('passengers')
         
         # Check for nights slot (hotels and holidays)
-        if entities.get('nights') and intent in ['hotel', 'holiday']:
-            filled_slots.add('nights')
+        # Check both entity extraction and keyword patterns
+        if intent in ['hotel', 'holiday']:
+            if entities.get('nights'):
+                filled_slots.add('nights')
+            # Also check for "for [number] nights/days" pattern
+            # BUT only if there's actually a number - "for" alone doesn't count
+            elif self._has_nights_pattern(query_lower, intent):
+                # Make sure it's not just "for" - need a number
+                if re.search(r'\bfor\s+\d+\s+(nights?|days?)\b', query_lower) or re.search(r'\b\d+\s+(nights?|days?)\b', query_lower):
+                    filled_slots.add('nights')
         
         # Intent-specific slots
         if intent == 'flight':
@@ -275,12 +359,26 @@ class SlotRules:
                 filled_slots.add('checkin')
             if self._has_slot_keyword(query_lower, 'checkout') or entities.get('checkout'):
                 filled_slots.add('checkout')
-            if entities.get('guests') or self._has_slot_keyword(query_lower, 'guests') or self._has_for_number_guests(query_lower):
+            # Check for guests - but prioritize nights if "for [number]" is ambiguous
+            # "for 3" without "nights" or "guests" should be treated as nights first
+            has_explicit_guests = self._has_slot_keyword(query_lower, 'guests') or \
+                                 re.search(r'\bfor\s+\d+\s+guests?\b', query_lower) or \
+                                 re.search(r'\bwith\s+\d+\s+guests?\b', query_lower) or \
+                                 re.search(r'\b\d+\s+guests?\b', query_lower)
+            
+            if entities.get('guests'):
+                # Only mark guests as filled if explicitly mentioned (not ambiguous "for [number]")
+                if has_explicit_guests or not re.search(r'\bfor\s+\d+\b', query_lower):
+                    filled_slots.add('guests')
+            elif has_explicit_guests:
                 filled_slots.add('guests')
             if self._has_slot_keyword(query_lower, 'rooms'):
                 filled_slots.add('rooms')
             # Check for nights slot
-            if entities.get('nights') or self._has_slot_keyword(query_lower, 'nights'):
+            # Only mark as filled if there's actually a number, not just "for"
+            if entities.get('nights'):
+                filled_slots.add('nights')
+            elif self._has_nights_pattern(query_lower, intent):
                 filled_slots.add('nights')
             # Check for category slot
             if entities.get('hotel_categories') or self._has_slot_keyword(query_lower, 'category'):
@@ -310,6 +408,36 @@ class SlotRules:
         if re.search(r'\bfor\s+\d+\s+nights?\b', query_lower):
             return False
         return re.search(r'\bfor\s+\d+\b', query_lower) is not None
+    
+    def _has_passengers_pattern(self, query_lower: str) -> bool:
+        """Detect passengers patterns in query."""
+        passenger_patterns = [
+            r'\bfor\s+\d+\s+(passengers?|travelers?|people|adults?)\b',
+            r'\b\d+\s+(passengers?|travelers?|people|adults?)\b',
+            r'\bfor\s+\d+\b',  # "for 2" could be passengers if no nights mentioned
+        ]
+        for pattern in passenger_patterns:
+            if self.pattern_matcher.match_pattern(query_lower, pattern):
+                # Make sure it's not nights
+                if not re.search(r'\bfor\s+\d+\s+nights?\b', query_lower):
+                    return True
+        return False
+    
+    def _has_nights_pattern(self, query_lower: str, intent: str) -> bool:
+        """Detect nights/days patterns in query."""
+        if intent not in ['hotel', 'holiday']:
+            return False
+        # Must have a number - "for" alone doesn't count
+        nights_patterns = [
+            r'\bfor\s+\d+\s+nights?\b',
+            r'\bfor\s+\d+\s+days?\b',
+            r'\b\d+\s+nights?\b',
+            r'\b\d+\s+days?\b',
+        ]
+        for pattern in nights_patterns:
+            if self.pattern_matcher.match_pattern(query_lower, pattern):
+                return True
+        return False
 
     def _slot_has_city_after_keyword(self, query_lower: str, cities: List[str], keyword: str) -> bool:
         """Check if any city appears after a slot keyword, regardless of order."""

@@ -1,5 +1,6 @@
 """Main rule engine that orchestrates rule matching."""
 
+import re
 from typing import Optional, Dict
 from .rules.intent_rules import IntentRules
 from .rules.entity_rules import EntityRules
@@ -103,6 +104,12 @@ class RuleEngine:
         city_from_match = self._match_city_or_from_first(query)
         if city_from_match:
             return city_from_match
+        
+        # Check for date-first queries (without intent)
+        # e.g., "weekend for 2", "tomorrow for 2 passengers"
+        date_first_match = self._match_date_first(query)
+        if date_first_match:
+            return date_first_match
         
         # No match found
         # print("No match found")  # Commented out - normal behavior when using LLM fallback
@@ -306,5 +313,79 @@ class RuleEngine:
                     next_slot='intent',
                     match_text=None
                 )
+        
+        return None
+    
+    def _match_date_first(self, query: str) -> Optional[RuleMatch]:
+        """
+        Match queries that start with a date, even without intent.
+        E.g., "weekend for 2" -> suggest intent or next slot
+        E.g., "tomorrow for 2 passengers" -> suggest intent or next slot
+        """
+        if not query or not query.strip():
+            return None
+        
+        query_lower = query.lower().strip()
+        
+        # Extract entities (dates, passengers, nights) even without intent
+        entities = self.entity_rules.extract(query, intent=None)
+        dates = entities.get('dates', [])
+        passengers = entities.get('passengers', [])
+        nights = entities.get('nights', [])
+        
+        # Check if query starts with a date word
+        date_keywords = ['today', 'tomorrow', 'weekend', 'monday', 'tuesday', 'wednesday', 
+                        'thursday', 'friday', 'saturday', 'sunday', 'next week', 'next month']
+        
+        starts_with_date = False
+        for date_kw in date_keywords:
+            if query_lower.startswith(date_kw):
+                starts_with_date = True
+                break
+        
+        # Also check if dates were extracted
+        if dates and not starts_with_date:
+            # Check if date appears early in the query
+            first_date = dates[0]
+            date_text = first_date.get('text', '').lower()
+            if date_text and query_lower.find(date_text) < 10:  # Date appears in first 10 chars
+                starts_with_date = True
+        
+        if not starts_with_date:
+            return None
+        
+        # If we have date + passengers/nights, suggest intent
+        if (passengers or nights) and dates:
+            return RuleMatch(
+                intent=None,
+                confidence=0.6,
+                entities=entities,
+                next_slot='intent',
+                match_text=None
+            )
+        
+        # If we have date + "for [number]", check what "for" refers to
+        if dates and ' for ' in query_lower:
+            # Check if "for" is followed by a number (could be passengers or nights)
+            for_match = re.search(r'\bfor\s+(\d+)(?:\s+(passengers?|travelers?|people|nights?|days?))?', query_lower)
+            if for_match:
+                # If it's "for [number]" without specifying, suggest intent
+                return RuleMatch(
+                    intent=None,
+                    confidence=0.6,
+                    entities=entities,
+                    next_slot='intent',
+                    match_text=None
+                )
+        
+        # If we just have a date, suggest intent
+        if dates:
+            return RuleMatch(
+                intent=None,
+                confidence=0.5,
+                entities=entities,
+                next_slot='intent',
+                match_text=None
+            )
         
         return None
