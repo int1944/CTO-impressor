@@ -60,6 +60,7 @@ class SuggestionGenerator:
         'passengers': 'for how many passengers',
         'nights': 'for how many nights',
         'category': 'property class',
+        'room_type': 'room type',
         'theme': 'theme',
         'budget': 'budget',
         'intent': None,  # No placeholder for intent
@@ -231,6 +232,8 @@ class SuggestionGenerator:
             entity_suggestions = self._get_nights_suggestions()
         elif next_slot == 'category':
             entity_suggestions = self._get_category_suggestions()
+        elif next_slot == 'room_type':
+            entity_suggestions = self._get_room_type_suggestions()
         elif next_slot == 'quota':
             entity_suggestions = self._get_quota_suggestions()
         elif next_slot == 'theme':
@@ -411,6 +414,10 @@ class SuggestionGenerator:
     def _get_category_suggestions(self) -> List[str]:
         """Get property class/category suggestions for hotels."""
         return ['budget', '3-star', '4-star', '5-star', 'luxury']
+    
+    def _get_room_type_suggestions(self) -> List[str]:
+        """Get room type suggestions for hotels."""
+        return ['single room', 'double room', 'suite', 'deluxe room']
     
     def _get_theme_suggestions(self) -> List[str]:
         """Get holiday theme suggestions."""

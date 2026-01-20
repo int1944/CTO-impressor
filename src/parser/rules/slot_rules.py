@@ -13,7 +13,7 @@ class SlotRules:
         'flight': ['intent', 'from', 'to', 'date', 'time', 'class', 'airline'],
         'hotel': ['intent', 'city', 'checkin', 'checkout', 'nights', 'guests', 'room_type', 'category', 'rooms'],
         'train': ['intent', 'from', 'to', 'date', 'class', 'quota'],
-        'holiday': ['intent', 'to', 'date', 'nights', 'passengers', 'theme', 'budget'],
+        'holiday': ['intent', 'to', 'date', 'nights', 'theme', 'budget'],
     }
     
     # Optional slots (suggested conditionally, not in strict order)
@@ -21,7 +21,7 @@ class SlotRules:
         'flight': ['return', 'passengers'],
         'hotel': ['nights', 'category', 'room_type', 'guests'],
         'train': ['passengers', 'time'],
-        'holiday': ['theme', 'budget'],  # Theme and budget are optional
+        'holiday': ['guests', 'theme', 'budget'],  # Guests, theme and budget are optional
     }
     
     # Keywords that indicate a slot is being filled
@@ -94,11 +94,11 @@ class SlotRules:
                 elif 'rooms' not in filled_slots:
                     return 'rooms'
             elif intent == 'holiday':
-                # For holidays, "for" could be nights or passengers
+                # For holidays, "for" could be nights or guests
                 if 'nights' not in filled_slots:
                     return 'nights'
-                elif 'passengers' not in filled_slots:
-                    return 'passengers'
+                elif 'guests' not in filled_slots:
+                    return 'guests'
         
         # Flexible ordering: Check for any explicitly mentioned but unfilled slots first
         # This allows users to mention slots in any order
@@ -140,8 +140,12 @@ class SlotRules:
                 return 'to'
         
         # Find first unfilled core slot
+        # Special handling for hotels: skip checkout if nights is filled (checkout can be calculated)
         for slot in slot_order:
             if slot not in filled_slots:
+                # For hotels, skip checkout if nights is filled
+                if intent == 'hotel' and slot == 'checkout' and 'nights' in filled_slots:
+                    continue
                 return slot
         
         # All core slots filled, check optional slots conditionally
@@ -151,6 +155,16 @@ class SlotRules:
                 # Check if this optional slot should be suggested
                 if self._should_suggest_optional_slot(slot, query, intent, entities, filled_slots):
                     return slot
+        
+        # For hotels, if core slots (city, checkin, nights, guests) are filled, suggest room_type or category
+        if intent == 'hotel':
+            core_hotel_slots = ['city', 'checkin', 'nights', 'guests']
+            if all(slot in filled_slots for slot in core_hotel_slots):
+                # Suggest room_type first, then category
+                if 'room_type' not in filled_slots and self._should_suggest_optional_slot('room_type', query, intent, entities, filled_slots):
+                    return 'room_type'
+                if 'category' not in filled_slots and self._should_suggest_optional_slot('category', query, intent, entities, filled_slots):
+                    return 'category'
         
         return None  # All slots filled
 
@@ -355,7 +369,11 @@ class SlotRules:
                     # Check if city appears after "in" keyword
                     if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'in'):
                         filled_slots.add('city')
+            # For hotels, if there's a date and no explicit checkin/checkout, treat it as checkin
             if self._has_slot_keyword(query_lower, 'checkin') or entities.get('checkin'):
+                filled_slots.add('checkin')
+            elif entities.get('dates') and 'checkin' not in filled_slots and not self._has_slot_keyword(query_lower, 'checkout'):
+                # If there's a date and no explicit checkout, it's likely checkin
                 filled_slots.add('checkin')
             if self._has_slot_keyword(query_lower, 'checkout') or entities.get('checkout'):
                 filled_slots.add('checkout')
@@ -394,6 +412,17 @@ class SlotRules:
             if self._has_slot_keyword(query_lower, 'to'):
                 if self._slot_has_city_after_keyword(query_lower, entities.get('cities', []), 'to'):
                     filled_slots.add('to')
+            # Check for guests slot (similar to hotels)
+            has_explicit_guests = self._has_slot_keyword(query_lower, 'guests') or \
+                                 re.search(r'\bfor\s+\d+\s+guests?\b', query_lower) or \
+                                 re.search(r'\bwith\s+\d+\s+guests?\b', query_lower) or \
+                                 re.search(r'\b\d+\s+guests?\b', query_lower)
+            if entities.get('guests'):
+                # Only mark guests as filled if explicitly mentioned (not ambiguous "for [number]")
+                if has_explicit_guests or not re.search(r'\bfor\s+\d+\b', query_lower):
+                    filled_slots.add('guests')
+            elif has_explicit_guests:
+                filled_slots.add('guests')
             # Check for theme slot
             if entities.get('themes') or self._has_slot_keyword(query_lower, 'theme'):
                 filled_slots.add('theme')
@@ -517,6 +546,23 @@ class SlotRules:
             # Don't suggest passengers unless explicitly mentioned
             return False
         
+        # Guests slot: suggest if explicitly mentioned or if keyword detected (for holidays and hotels)
+        if slot == 'guests':
+            # Check if guests keyword is explicitly mentioned
+            if self._has_slot_keyword(query_lower, 'guests'):
+                return True
+            # Check for "for [number] guests/people" pattern
+            guest_patterns = [
+                r'\bfor\s+\d+\s+guests?\b',
+                r'\bwith\s+\d+\s+guests?\b',
+                r'\b\d+\s+guests?\b',
+            ]
+            for pattern in guest_patterns:
+                if self.pattern_matcher.match_pattern(query_lower, pattern):
+                    return True
+            # Don't suggest guests unless explicitly mentioned
+            return False
+        
         # Nights slot: suggest if keyword detected or flexible placement
         if slot == 'nights':
             # Check if nights keyword is mentioned
@@ -536,7 +582,22 @@ class SlotRules:
             # Check if category keyword is mentioned
             if self._has_slot_keyword(query_lower, 'category'):
                 return True
+            # For hotels, can suggest category after core slots (city, checkin, nights, guests) are filled
+            if intent == 'hotel':
+                core_slots_filled = 'city' in filled_slots and 'checkin' in filled_slots
+                return core_slots_filled
             # Can suggest category after core slots are filled
+            return True
+        
+        # Room type slot: suggest if keyword detected, otherwise after core slots
+        if slot == 'room_type':
+            # Check if room type keyword is mentioned
+            if self._has_slot_keyword(query_lower, 'room_type'):
+                return True
+            # For hotels, can suggest room_type after core slots (city, checkin, nights, guests) are filled
+            if intent == 'hotel':
+                core_slots_filled = 'city' in filled_slots and 'checkin' in filled_slots
+                return core_slots_filled
             return True
         
         # Time slot for trains: suggest if keyword detected

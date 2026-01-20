@@ -511,7 +511,9 @@ export function insertEntity(query, entity, entityType) {
       return query + (query.endsWith(" ") ? "" : " ") + entity;
     case "theme":
     case "budget":
-      // For theme and budget, just append to end (no keyword prefix)
+    case "category":
+    case "room_type":
+      // For theme, budget, category, and room_type, just append to end (no keyword prefix)
       return query + (query.endsWith(" ") ? "" : " ") + entity;
 
     default:

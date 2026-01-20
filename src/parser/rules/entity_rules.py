@@ -444,6 +444,8 @@ class EntityRules:
             # For holidays, "nights" can also be called "days"
             if not entities['nights']:
                 entities['nights'] = self._extract_holiday_duration(query)
+            # For holidays, extract guests (similar to hotels)
+            entities['guests'] = self._extract_hotel_guests(query)
         
         return entities
     
