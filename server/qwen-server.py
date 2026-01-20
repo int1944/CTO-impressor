@@ -153,7 +153,6 @@ def filter_suggestions(suggestions: str, present_entities: Set[str], lob: str) -
             "check-in": ["on [check-in date]", "check-in"],
             "nights": ["for [nights]", "[nights]", "nights"],
             "guests": ["with [guests]", "[guests]", "guests"],
-            "room": ["in [room type]", "room type", "room"],
             "category": ["[category]", "star", "budget", "luxury"],
         },
         "train": {
@@ -317,7 +316,7 @@ ENTITY ORDER BY LOB:
  
 FLIGHTS: from [source] → to [destination] → on [date] → return [date] → for [passengers] → in [class] → in [time]
 
-HOTELS: in [location] → on [check-in date] → for [nights] → with [guests] → in [room type] → [category]
+HOTELS: in [location] → on [check-in date] → for [nights] → with [guests] → [category]
 
 TRAINS: from [source] → to [destination] → on [date] → in [class] → for [passengers] → in [time]
 
@@ -351,9 +350,7 @@ HOTELS:
 
 - guests: "for [number] guests", "with [number] people"
 
-- room: "single", "double", "suite"
-
-- category: "[number]-star", "budget", "luxury"
+- category: "[number]-star", "budget", "luxury", "suite"
  
 make sure no other entities are present other than above for hotels.
  
@@ -455,7 +452,7 @@ Query: "hotel in city1 for 3 nights"
 
 Present: location (city1), nights (3 nights)
 
-Missing: check-in date, guests, room type
+Missing: check-in date, guests, category
 
 Next: check-in date (next most important)
 
@@ -566,10 +563,9 @@ RULES:
         "location": "city",
         "on [check-in date]": "checkin",
         "for [nights]": "nights",
+        "nights": "nights",
         "guests": "guests",
         "with [guests]": "guests",
-        "room type": "rooms",
-        "in [room type]": "room type",
         "[category]": "category",
         "check-out [date]": "checkout",
         # Trains (same as flights for most fields)
