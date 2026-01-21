@@ -14,13 +14,13 @@ class IntentRules:
     # Intent patterns with confidence scores
     INTENT_PATTERNS: Dict[str, list[tuple[str, float]]] = {
         'flight': [
-            (r'\b(book|want|need|looking for|search for)\s+(a\s+)?(flight|fly|airplane|airline|ticket)', 0.95),
-            (r'\b(flight|fly|flying|airline)\s+(from|to|on|for|between)', 0.90),
+            (r'\b(book|want|need|looking for|search for)\s+(a\s+)?(flight|flights|fly|airplane|airline|ticket)', 0.95),
+            (r'\b(flight|flights|fly|flying|airline)\s+(from|to|on|for|between)', 0.90),
             # Match "flight" when it appears after cities/keywords (e.g., "Mumbai to Delhi flight")
-            (r'\b(from|to|between)\s+[^.]+\s+(flight|fly|flying)\b', 0.88),
-            (r'\b\w+\s+(to|from)\s+\w+\s+(flight|fly|flying)\b', 0.88),
+            (r'\b(from|to|between)\s+[^.]+\s+(flight|flights|fly|flying)\b', 0.88),
+            (r'\b\w+\s+(to|from)\s+\w+\s+(flight|flights|fly|flying)\b', 0.88),
             # Match standalone "flight" word (lower confidence to avoid false positives)
-            (r'\b(flight|fly|flying)\b', 0.78),
+            (r'\b(flight|flights|fly|flying)\b', 0.78),
             (r'\b(departure|destination|airport|depart|arrive)', 0.85),
             (r'\b(airline|aircraft|boarding)', 0.80),
             (r'\b(show me|find|list)\s+(the\s+)?flights?\b', 0.90),
@@ -46,11 +46,13 @@ class IntentRules:
             (r'\b(passenger|passengers)\b', 0.76),
         ],
         'hotel': [
-            (r'\b(book|want|need|looking for|search for)\s+(a\s+)?(hotel|stay|accommodation|room|reservation)', 0.95),
-            (r'\b(hotel|stay|accommodation|room|booking)\s+(in|at|for|from|near)', 0.90),
+            (r'\b(book|want|need|looking for|search for)\s+(a\s+)?(hotel|hotels|stay|accommodation|room|reservation)', 0.95),
+            (r'\b(hotel|hotels|stay|accommodation|room|booking)\s+(in|at|for|from|near|with)', 0.90),
             # Match "hotel" when it appears after cities/keywords (e.g., "Mumbai hotel")
-            (r'\b\w+\s+(hotel|stay|accommodation|room)\b', 0.88),
-            (r'\b(in|at|for)\s+[^.]+\s+(hotel|stay|accommodation)\b', 0.88),
+            (r'\b\w+\s+(hotel|hotels|stay|accommodation|room)\b', 0.88),
+            (r'\b(in|at|for)\s+[^.]+\s+(hotel|hotels|stay|accommodation)\b', 0.88),
+            # Match "hotels with" pattern (e.g., "hotels with swimming pool")
+            (r'\b(hotel|hotels)\s+with\b', 0.90),
             (r'\b(check.?in|check.?out|checkin|checkout)', 0.85),
             (r'\b(lodging|resort|guesthouse)', 0.80),
             (r'\b(find|search|show)\s+hotels?\b', 0.88),
@@ -60,11 +62,11 @@ class IntentRules:
             (r'\b(by)\s+hotel\b', 0.78),
         ],
         'train': [
-            (r'\b(book|want|need|search for)\s+(a\s+)?(train|railway|rail|ticket)', 0.95),
-            (r'\b(train|railway|rail)\s+(from|to|on|for|between)', 0.90),
+            (r'\b(book|want|need|search for)\s+(a\s+)?(train|trains|railway|rail|ticket)', 0.95),
+            (r'\b(train|trains|railway|rail)\s+(from|to|on|for|between)', 0.90),
             # Match "train" when it appears after cities/keywords (e.g., "Mumbai to Delhi train")
-            (r'\b(from|to|between)\s+[^.]+\s+(train|railway|rail)\b', 0.88),
-            (r'\b\w+\s+(to|from)\s+\w+\s+(train|railway|rail)\b', 0.88),
+            (r'\b(from|to|between)\s+[^.]+\s+(train|trains|railway|rail)\b', 0.88),
+            (r'\b\w+\s+(to|from)\s+\w+\s+(train|trains|railway|rail)\b', 0.88),
             (r'\b(station|journey|platform|compartment)', 0.85),
             (r'\b(railway|locomotive)', 0.80),
             (r'\b(find|search|show|any)\s+trains?\b', 0.90),
@@ -80,17 +82,17 @@ class IntentRules:
             (r'\b(tatkal)\s+ticket\b', 0.86),
         ],
         'holiday': [
-            (r'\b(book|want|need|looking for|search for|plan)\s+(a\s+)?(holiday|vacation|package|trip|tour)', 0.95),
-            (r'\b(holiday|vacation|package|trip|tour)\s+(to|for|starting|from)', 0.90),
-            (r'\b(holiday|vacation)\s+package\b', 0.92),
-            (r'\b(book|want|need)\s+(a\s+)?(holiday|vacation)\s+package\b', 0.95),
-            (r'\b(plan|planning)\s+(a\s+)?(holiday|vacation|trip|tour)\b', 0.90),
-            (r'\b(go\s+on|going\s+on)\s+(a\s+)?(vacation|holiday|trip)\b', 0.88),
-            (r'\b(i\s+want\s+to\s+go\s+on|i\s+want\s+a)\s+(vacation|holiday)\b', 0.90),
-            (r'\b(holiday|vacation)\s+to\s+[^\s]+\b', 0.88),
-            (r'\b(week[-\s]?long|weekend|long\s+weekend)\s+(holiday|vacation|trip)\b', 0.85),
-            (r'\b(\d+[-\s]?day|days?)\s+(holiday|vacation|trip|package)\b', 0.88),
-            (r'\b(holiday|vacation)\s+for\s+(\d+)\s+(days?|nights?)\b', 0.88),
+            (r'\b(book|want|need|looking for|search for|plan)\s+(a\s+)?(holiday|holidays|vacation|package|trip|tour)', 0.95),
+            (r'\b(holiday|holidays|vacation|package|trip|tour)\s+(to|for|starting|from)', 0.90),
+            (r'\b(holiday|holidays|vacation)\s+package\b', 0.92),
+            (r'\b(book|want|need)\s+(a\s+)?(holiday|holidays|vacation)\s+package\b', 0.95),
+            (r'\b(plan|planning)\s+(a\s+)?(holiday|holidays|vacation|trip|tour)\b', 0.90),
+            (r'\b(go\s+on|going\s+on)\s+(a\s+)?(vacation|holiday|holidays|trip)\b', 0.88),
+            (r'\b(i\s+want\s+to\s+go\s+on|i\s+want\s+a)\s+(vacation|holiday|holidays)\b', 0.90),
+            (r'\b(holiday|holidays|vacation)\s+to\s+[^\s]+\b', 0.88),
+            (r'\b(week[-\s]?long|weekend|long\s+weekend)\s+(holiday|holidays|vacation|trip)\b', 0.85),
+            (r'\b(\d+[-\s]?day|days?)\s+(holiday|holidays|vacation|trip|package)\b', 0.88),
+            (r'\b(holiday|holidays|vacation)\s+for\s+(\d+)\s+(days?|nights?)\b', 0.88),
             # Romantic/Honeymoon/Getaway patterns - holiday packages
             (r'\b(romantic)\s+(getaway|trip|vacation|holiday|escape|retreat)\b', 0.95),
             (r'\b(honeymoon)\s*(trip|package|vacation|to|in|for|with)?\b', 0.95),
@@ -102,20 +104,20 @@ class IntentRules:
             (r'\b(solo)\s+(trip|travel|vacation|adventure)\b', 0.88),
             (r'\b(group)\s+(trip|tour|vacation|holiday)\b', 0.88),
             # Additional patterns for better coverage
-            (r'\b(holiday|vacation|package|trip|tour)\b', 0.80),  # Standalone words (lower confidence)
-            (r'\b(i\s+want|i\s+need|i\s+am\s+looking)\s+(a\s+)?(holiday|vacation|package)\b', 0.92),
-            (r'\b(want|need|looking for)\s+(a\s+)?(holiday|vacation|package)\b', 0.90),
-            (r'\b(book|book\s+me)\s+(a\s+)?(holiday|vacation|package|trip)\b', 0.93),
-            (r'\b(holiday|vacation)\s+(package|trip|tour)\b', 0.90),
+            (r'\b(holiday|holidays|vacation|package|trip|tour)\b', 0.80),  # Standalone words (lower confidence)
+            (r'\b(i\s+want|i\s+need|i\s+am\s+looking)\s+(a\s+)?(holiday|holidays|vacation|package)\b', 0.92),
+            (r'\b(want|need|looking for)\s+(a\s+)?(holiday|holidays|vacation|package)\b', 0.90),
+            (r'\b(book|book\s+me)\s+(a\s+)?(holiday|holidays|vacation|package|trip)\b', 0.93),
+            (r'\b(holiday|holidays|vacation)\s+(package|trip|tour)\b', 0.90),
             (r'\b(travel|trip|tour)\s+(package|plan)\b', 0.85),
             # Patterns for queries without explicit "holiday/vacation" but with holiday context
             (r'\b(i\s+want\s+to\s+go\s+to|going\s+to|want\s+to\s+go)\s+[^\s]+\s+(next\s+month|next\s+week|next\s+weekend|tomorrow|starting|for\s+\d+)', 0.82),
             (r'\b(i\s+want\s+to\s+go|going|want\s+to\s+go)\s+to\s+[^\s]+\s+(with\s+my\s+family|for\s+family|for\s+\d+\s+days)', 0.80),
             # Standalone holiday/vacation words (lower confidence to avoid false positives)
-            (r'^\s*(holiday|vacation|package|trip|tour)\s*$', 0.78),
+            (r'^\s*(holiday|holidays|vacation|package|trip|tour)\s*$', 0.78),
             # More variations
-            (r'\b(book|want|need)\s+(holiday|vacation|package|trip|tour)\b', 0.88),
-            (r'\b(holiday|vacation|package)\s+(to|for|in)\b', 0.85),
+            (r'\b(book|want|need)\s+(holiday|holidays|vacation|package|trip|tour)\b', 0.88),
+            (r'\b(holiday|holidays|vacation|package)\s+(to|for|in)\b', 0.85),
         ]
     }
     
