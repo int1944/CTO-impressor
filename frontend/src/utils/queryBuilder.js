@@ -552,8 +552,42 @@ export function insertEntity(query, entity, entityType) {
     case "budget":
     case "category":
     case "room_type":
-      // For theme, budget, category, and room_type, just append to end (no keyword prefix)
-      return query + (query.endsWith(" ") ? "" : " ") + entity;
+    case "amenities":
+      // For theme, budget, category, room_type, and amenities, handle "with" keyword
+      const queryLowerAmenities = query.toLowerCase().trim();
+      
+      // If entity already starts with "with", use it as-is
+      if (entity.toLowerCase().startsWith("with ")) {
+        // Check if "with" already exists at the end
+        if (queryLowerAmenities.endsWith(" with") || queryLowerAmenities.endsWith("with")) {
+          // If "with" is at the end, just append the amenity (strip "with" from entity)
+          const amenityOnly = entity.replace(/^with\s+/i, '').trim();
+          return query.trim() + " " + amenityOnly;
+        }
+        // Try to find "with" followed by an amenity at the END of query
+        const withMatchEnd = query.trim().match(/\bwith\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+        if (withMatchEnd) {
+          // Replace the "with amenity" at the end
+          return query.trim().replace(withMatchEnd[0], entity);
+        }
+        // Just append the entity (it already has "with")
+        return query.trim() + " " + entity;
+      }
+      
+      // Check if "with" keyword exists at the end
+      if (queryLowerAmenities.endsWith(" with") || queryLowerAmenities.endsWith("with")) {
+        // If "with" is at the end, just append the amenity
+        return query.trim() + " " + entity;
+      }
+      
+      // Try to find "with" followed by an amenity at the END of query
+      const withMatchEndAmenities = query.trim().match(/\bwith\s+([^\s]+(?:\s+[^\s]+)*?)$/i);
+      if (withMatchEndAmenities) {
+        return query.trim().replace(withMatchEndAmenities[0], `with ${entity}`);
+      }
+      
+      // No "with" at the end - add "with" before the amenity
+      return query + (query.endsWith(" ") ? "" : " ") + `with ${entity}`;
 
     default:
       // Default: append to end

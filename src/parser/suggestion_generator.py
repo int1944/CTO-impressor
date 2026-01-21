@@ -63,6 +63,7 @@ class SuggestionGenerator:
         'room_type': 'room type',
         'theme': 'theme',
         'budget': 'budget',
+        'amenities': 'with',
         'intent': None,  # No placeholder for intent
     }
     
@@ -240,6 +241,8 @@ class SuggestionGenerator:
             entity_suggestions = self._get_theme_suggestions()
         elif next_slot == 'budget':
             entity_suggestions = self._get_budget_suggestions()
+        elif next_slot == 'amenities':
+            entity_suggestions = self._get_amenities_suggestions()
         
         # Add entity suggestions (selectable)
         # Adjust max_suggestions to account for placeholder
@@ -426,3 +429,28 @@ class SuggestionGenerator:
     def _get_budget_suggestions(self) -> List[str]:
         """Get holiday budget suggestions."""
         return ['budget', 'affordable', 'mid-range', 'luxury', 'premium']
+    
+    def _get_amenities_suggestions(self) -> List[str]:
+        """Get amenities suggestions for hotels."""
+        return [
+            'swimming pool',
+            'wifi',
+            'gym',
+            'spa',
+            'parking',
+            'restaurant',
+            'bar',
+            'room service',
+            'air conditioning',
+            'breakfast',
+            'laundry',
+            'business center',
+            'pet friendly',
+            'beach access',
+            'balcony',
+            'kitchen',
+            'jacuzzi',
+            'tv',
+            'minibar',
+            'safe'
+        ]

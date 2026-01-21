@@ -72,6 +72,29 @@ class EntityRules:
         (r'\b(5-star|4-star|3-star|2-star|1-star)\b', 'category'),
     ]
 
+    HOTEL_AMENITIES_PATTERNS = [
+        (r'\bwith\s+(swimming\s+pool|pool)\b', 'swimming_pool'),
+        (r'\bwith\s+(wifi|wi-fi|wireless|internet)\b', 'wifi'),
+        (r'\bwith\s+(gym|fitness\s+center|fitness\s+centre)\b', 'gym'),
+        (r'\bwith\s+(spa|massage)\b', 'spa'),
+        (r'\bwith\s+(parking|car\s+parking)\b', 'parking'),
+        (r'\bwith\s+(restaurant|dining)\b', 'restaurant'),
+        (r'\bwith\s+(bar|lounge)\b', 'bar'),
+        (r'\bwith\s+(room\s+service|room-service)\b', 'room_service'),
+        (r'\bwith\s+(air\s+conditioning|ac|a/c)\b', 'air_conditioning'),
+        (r'\bwith\s+(breakfast|free\s+breakfast)\b', 'breakfast'),
+        (r'\bwith\s+(laundry|dry\s+cleaning)\b', 'laundry'),
+        (r'\bwith\s+(business\s+center|business\s+centre|conference)\b', 'business_center'),
+        (r'\bwith\s+(pet\s+friendly|pets?)\b', 'pet_friendly'),
+        (r'\bwith\s+(beach\s+access|beachfront)\b', 'beach_access'),
+        (r'\bwith\s+(balcony|terrace)\b', 'balcony'),
+        (r'\bwith\s+(kitchen|kitchenette)\b', 'kitchen'),
+        (r'\bwith\s+(jacuzzi|hot\s+tub)\b', 'jacuzzi'),
+        (r'\bwith\s+(tv|television)\b', 'tv'),
+        (r'\bwith\s+(minibar|mini\s+bar)\b', 'minibar'),
+        (r'\bwith\s+(safe|safety\s+deposit)\b', 'safe'),
+    ]
+
     # Holiday-specific patterns
     HOLIDAY_THEME_PATTERNS = [
         (r'\b(honeymoon|romantic|couple)\b', 'honeymoon'),
@@ -452,6 +475,7 @@ class EntityRules:
         entities['guests'] = self._extract_hotel_guests(query)
         entities['room_types'] = self._extract_hotel_room_types(query)
         entities['hotel_categories'] = self._extract_hotel_categories(query)
+        entities['amenities'] = self._extract_hotel_amenities(query)
         
         # Intent-specific extraction
         if intent == 'flight':
@@ -908,6 +932,24 @@ class EntityRules:
                 })
         
         return categories
+    
+    def _extract_hotel_amenities(self, query: str) -> List[Dict[str, str]]:
+        """Extract hotel amenities."""
+        amenities = []
+        query_lower = query.lower()
+        
+        for pattern, amenity_type in self.HOTEL_AMENITIES_PATTERNS:
+            match = self.pattern_matcher.match_pattern(query_lower, pattern)
+            if match:
+                # Extract the amenity name from the match
+                amenity_text = match.group(0)
+                amenities.append({
+                    'text': amenity_text,
+                    'type': amenity_type,
+                    'raw': amenity_text
+                })
+        
+        return amenities
     
     def _extract_airlines(self, query: str) -> List[str]:
         """Extract airline names from query."""

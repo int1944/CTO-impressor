@@ -13,6 +13,7 @@ import { QuotaWidget } from "./components/QuotaWidget";
 import { AirlineWidget } from "./components/AirlineWidget";
 import { ThemeWidget } from "./components/ThemeWidget";
 import { BudgetWidget } from "./components/BudgetWidget";
+import { AmenitiesWidget } from "./components/AmenitiesWidget";
 import { PlaceholderTags } from "./components/PlaceholderTags";
 import { useSuggestions } from "./hooks/useSuggestions";
 import { insertEntity } from "./utils/queryBuilder";
@@ -372,6 +373,11 @@ function App() {
     suggestions.some(
       (s) => s.entity_type === "budget" && !s.is_placeholder
     );
+  const showAmenitiesWidget =
+    nextSlot === "amenities" ||
+    suggestions.some(
+      (s) => s.entity_type === "amenities" && !s.is_placeholder
+    );
 
   const hasWidgetForNextSlot =
     showIntentWidget ||
@@ -385,6 +391,7 @@ function App() {
     showRoomsWidget ||
     showCategoryWidget ||
     showRoomTypeWidget ||
+    showAmenitiesWidget ||
     showQuotaWidget ||
     showAirlineWidget ||
     showThemeWidget ||
@@ -540,6 +547,14 @@ function App() {
                />
              )}
 
+             {/* Amenities Widget - Hide when inline suggestions showing */}
+            {showAmenitiesWidget && !showInlineSuggestions && (
+               <AmenitiesWidget
+                 suggestions={suggestions}
+                 onAmenitySelect={handleSuggestionClick}
+               />
+             )}
+
              {/* Quota Widget - Hide when inline suggestions showing */}
             {showQuotaWidget && !showInlineSuggestions && (
                <QuotaWidget
@@ -600,9 +615,10 @@ function App() {
          !showGuestsWidget && 
          !showNightsWidget && 
          !showRoomsWidget && 
-         !showCategoryWidget &&
-        !showRoomTypeWidget && 
-         !showQuotaWidget && 
+        !showCategoryWidget &&
+        !showRoomTypeWidget &&
+        !showAmenitiesWidget &&
+        !showQuotaWidget &&
          !showAirlineWidget &&
          !showThemeWidget &&
          !showBudgetWidget && (

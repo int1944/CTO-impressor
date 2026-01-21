@@ -19,7 +19,7 @@ class SlotRules:
     # Optional slots (suggested conditionally, not in strict order)
     OPTIONAL_SLOTS = {
         'flight': ['return', 'passengers'],
-        'hotel': ['nights', 'category', 'room_type', 'guests'],
+        'hotel': ['nights', 'category', 'room_type', 'guests', 'amenities'],
         'train': ['passengers', 'time'],
         'holiday': ['guests', 'theme', 'budget'],  # Guests, theme and budget are optional
     }
@@ -45,6 +45,7 @@ class SlotRules:
         'room_type': ['single room', 'double room', 'suite', 'deluxe room'],
         'theme': ['theme', 'honeymoon', 'adventure', 'beach', 'family', 'mountains', 'romantic', 'cultural', 'religious'],
         'budget': ['budget', 'luxury', 'affordable', 'under', 'within', 'price', 'cost'],
+        'amenities': ['with', 'amenities', 'amenity', 'facilities', 'facility', 'features', 'feature'],
     }
     
     def __init__(self):
@@ -84,6 +85,38 @@ class SlotRules:
             if has_checkin and has_nights:
                 filled_slots.add('checkout')
 
+        # Special handling for incomplete "with" keyword (check VERY early, before other slot checks)
+        # This must happen before checking for other slots to prioritize amenities
+        # For hotels: "hotel with" -> amenities (priority), "hotel for 2 guests with" -> amenities (if guests filled)
+        # For holidays: "holiday with" -> guests
+        # For flights/trains: "flight with" -> passengers
+        if query_lower.endswith(' with') or query_lower.endswith('with'):
+            if intent == 'hotel':
+                # Priority 1: If guests is already filled, "with" means amenities
+                if 'guests' in filled_slots:
+                    if 'amenities' not in filled_slots:
+                        return 'amenities'
+                # Priority 2: If "hotel" appears before "with" and no guests context, suggest amenities
+                # This handles "hotel with" -> amenities
+                elif re.search(r'\bhotel\b', query_lower) and not re.search(r'\b(for|with)\s+\d+\s+(guests?|people)\b', query_lower):
+                    if 'amenities' not in filled_slots:
+                        return 'amenities'
+                # Priority 3: If there's a number before "with" that might be guests, suggest guests
+                elif re.search(r'\b(for|with)\s+\d+\b', query_lower) and 'guests' not in filled_slots:
+                    return 'guests'
+                # Priority 4: Default to amenities if not filled
+                elif 'amenities' not in filled_slots:
+                    return 'amenities'
+                # Fallback: suggest guests if amenities already filled
+                elif 'guests' not in filled_slots:
+                    return 'guests'
+            elif intent == 'holiday':
+                if 'guests' not in filled_slots:
+                    return 'guests'
+            elif intent in ['flight', 'train']:
+                if 'passengers' not in filled_slots:
+                    return 'passengers'
+        
         # If user explicitly typed a slot keyword last, honor it (order-free)
         # BUT only if that slot is not already filled
         explicit_slot = self._get_last_keyword_slot(query, intent, filled_slots)
@@ -113,19 +146,6 @@ class SlotRules:
                     return 'nights'
                 elif 'guests' not in filled_slots:
                     return 'guests'
-        
-        # Special handling for incomplete "with" keyword (for companions/guests)
-        # "romantic getaway with" -> suggest guests/companions
-        if query_lower.endswith(' with') or query_lower.endswith('with'):
-            if intent == 'holiday':
-                if 'guests' not in filled_slots:
-                    return 'guests'
-            elif intent == 'hotel':
-                if 'guests' not in filled_slots:
-                    return 'guests'
-            elif intent in ['flight', 'train']:
-                if 'passengers' not in filled_slots:
-                    return 'passengers'
         
         # Flexible ordering: Check for any explicitly mentioned but unfilled slots first
         # This allows users to mention slots in any order
@@ -431,6 +451,10 @@ class SlotRules:
             # Check for room type slot
             if entities.get('room_types') or self._has_slot_keyword(query_lower, 'room_type'):
                 filled_slots.add('room_type')
+            # Check for amenities slot - only mark as filled if there's an actual amenity entity
+            # Don't mark as filled just because "with" keyword appears (it might be incomplete)
+            if entities.get('amenities') and len(entities.get('amenities', [])) > 0:
+                filled_slots.add('amenities')
             
             # === Hotel mutual exclusion rules ===
             # Detect check-in/check-out more robustly (handles "check-in", "checkin", "check in")
@@ -660,6 +684,16 @@ class SlotRules:
                 return True
             # Can suggest time after date is filled
             if 'date' in filled_slots:
+                return True
+            return False
+        
+        # Amenities slot for hotels: suggest if keyword detected or after core slots
+        if slot == 'amenities' and intent == 'hotel':
+            # Check if amenities keyword is mentioned
+            if self._has_slot_keyword(query_lower, 'amenities'):
+                return True
+            # Can suggest amenities after core slots (city, checkin) are filled
+            if 'city' in filled_slots and 'checkin' in filled_slots:
                 return True
             return False
         
