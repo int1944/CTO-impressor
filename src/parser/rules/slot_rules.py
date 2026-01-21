@@ -384,8 +384,9 @@ class SlotRules:
         if intent == 'flight':
             if entities.get('airlines'):
                 filled_slots.add('airline')
-            # Check for return date slot
-            if entities.get('return_dates') or self._has_slot_keyword(query_lower, 'return'):
+            # Check for return date slot - only mark as filled if there's actually a return date entity
+            # If just the keyword "return" is mentioned, it should be the next slot to fill
+            if entities.get('return_dates'):
                 filled_slots.add('return')
         elif intent == 'hotel':
             # City slot for hotels - check if city is mentioned with "in" keyword

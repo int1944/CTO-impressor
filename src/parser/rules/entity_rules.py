@@ -232,10 +232,13 @@ class EntityRules:
     
     # Return date patterns (for flights)
     RETURN_DATE_PATTERNS = [
-        (r'\b(return|returning|coming back|round trip)\s+(on|by|before|after)?\s*(.+?)\b', 'return_date'),
-        (r'\b(return|returning)\s+(tomorrow|today|next week|next month)\b', 'return_date'),
+        # Specific patterns first (more specific)
         (r'\b(return|returning)\s+on\s+(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b', 'return_date'),
         (r'\b(return|returning)\s+on\s+(\d{1,2})(st|nd|rd|th)\b', 'return_date'),
+        (r'\b(return|returning)\s+(tomorrow|today|day after tomorrow|next week|next month|this weekend)\b', 'return_date'),
+        # More general pattern - capture date after return/returning on (must match multi-word dates)
+        (r'\b(return|returning|coming back)\s+on\s+([^\s]+(?:\s+[^\s]+){0,3}?)(?=\s+(?:for|in|with|$)|$)', 'return_date'),
+        (r'\b(round\s*trip|round-trip)\b', 'return_date'),  # Round trip indicates return needed
     ]
     
     # Nights patterns (for hotels)
@@ -453,6 +456,7 @@ class EntityRules:
         # Intent-specific extraction
         if intent == 'flight':
             entities['airlines'] = self._extract_airlines(query)
+            entities['return_dates'] = self._extract_return_dates(query)
         elif intent == 'hotel':
             entities['hotels'] = self._extract_hotels(query)
 
@@ -939,11 +943,30 @@ class EntityRules:
         for pattern, date_type in self.RETURN_DATE_PATTERNS:
             match = self.pattern_matcher.match_pattern(query_lower, pattern)
             if match:
+                matched_text = match.group(0)
+                # Extract just the date part (after "return on" or "returning on")
+                # For patterns like "return on day after tomorrow", extract "day after tomorrow"
+                date_match = re.search(r'(?:return|returning|coming back)\s+on\s+(.+?)(?=\s+(?:for|in|with|$)|$)', matched_text, re.IGNORECASE)
+                if date_match:
+                    date_text = date_match.group(1).strip()
+                elif 'round trip' in matched_text.lower() or 'round-trip' in matched_text.lower():
+                    # For round trip, we just need to indicate return is needed
+                    date_text = matched_text
+                else:
+                    # For patterns like "return tomorrow", extract "tomorrow"
+                    date_match = re.search(r'(?:return|returning)\s+(.+?)(?=\s+(?:for|in|with|on|$)|$)', matched_text, re.IGNORECASE)
+                    if date_match:
+                        date_text = date_match.group(1).strip()
+                    else:
+                        date_text = matched_text
+                
                 return_dates.append({
-                    'text': match.group(0),
+                    'text': date_text,
                     'type': date_type,
-                    'raw': match.group(0)
+                    'raw': matched_text
                 })
+                # Only extract first match to avoid duplicates
+                break
         
         return return_dates
     
