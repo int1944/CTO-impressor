@@ -10,6 +10,8 @@ from llama_cpp import Llama
 import uvicorn
 import redis
 from cache import QueryCache
+import psutil
+import os
 
 
 def extract_present_entities(query: str) -> Tuple[Set[str], str]:
@@ -842,6 +844,49 @@ async def cache_info_endpoint():
             "cache_enabled": True,
             "error": str(e),
         }
+
+
+@app.get("/memory/stats")
+async def memory_stats_endpoint():
+    """
+    Get current memory usage statistics for the Qwen server process.
+
+    Returns:
+        Memory statistics including RSS, VMS, and system memory
+    """
+    try:
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        memory_percent = process.memory_percent()
+
+        # System memory
+        system_memory = psutil.virtual_memory()
+
+        return {
+            "process_memory": {
+                "rss_bytes": memory_info.rss,
+                "vms_bytes": memory_info.vms,
+                "rss_mb": round(memory_info.rss / (1024 * 1024), 2),
+                "vms_mb": round(memory_info.vms / (1024 * 1024), 2),
+                "rss_gb": round(memory_info.rss / (1024 * 1024 * 1024), 3),
+                "vms_gb": round(memory_info.vms / (1024 * 1024 * 1024), 3),
+                "percent": round(memory_percent, 2),
+                "rss_human": f"{memory_info.rss / (1024 * 1024):.2f} MB",
+                "vms_human": f"{memory_info.vms / (1024 * 1024):.2f} MB",
+            },
+            "system_memory": {
+                "total_gb": round(system_memory.total / (1024 * 1024 * 1024), 2),
+                "available_gb": round(
+                    system_memory.available / (1024 * 1024 * 1024), 2
+                ),
+                "used_gb": round(system_memory.used / (1024 * 1024 * 1024), 2),
+                "percent": system_memory.percent,
+            },
+            "model_loaded": llm_instance is not None,
+        }
+    except Exception as e:
+        logger.error(f"Error getting memory stats: {e}")
+        return {"error": str(e)}
 
 
 if __name__ == "__main__":
